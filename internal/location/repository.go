@@ -1,16 +1,20 @@
 package location
 
 import (
+	"context"
+	"log"
 	"sort"
 	"strconv"
 	"sync"
+
+	"lam-phuong-api/internal/airtable"
 )
 
 // Repository defines behavior for storing and retrieving locations.
 type Repository interface {
 	List() []Location
 	Get(id string) (Location, bool)
-	Create(location Location) (Location, error)
+	Create(ctx context.Context, location Location) (Location, error)
 	Update(id string, location Location) (Location, bool)
 	Delete(id string) bool
 }
@@ -68,7 +72,8 @@ func (r *InMemoryRepository) Get(id string) (Location, bool) {
 }
 
 // Create adds a new location and automatically assigns an ID.
-func (r *InMemoryRepository) Create(location Location) (Location, error) {
+// Note: ctx parameter is for interface compatibility but not used in in-memory implementation.
+func (r *InMemoryRepository) Create(ctx context.Context, location Location) (Location, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -104,4 +109,65 @@ func (r *InMemoryRepository) Delete(id string) bool {
 
 	delete(r.data, id)
 	return true
+}
+
+// AirtableRepository wraps a Repository and adds Airtable persistence.
+type AirtableRepository struct {
+	repo           Repository
+	airtableClient *airtable.Client
+	airtableTable  string
+}
+
+// NewAirtableRepository creates a repository that syncs to Airtable.
+func NewAirtableRepository(repo Repository, airtableClient *airtable.Client, airtableTable string) *AirtableRepository {
+	return &AirtableRepository{
+		repo:           repo,
+		airtableClient: airtableClient,
+		airtableTable:  airtableTable,
+	}
+}
+
+// List returns all locations from the underlying repository.
+func (r *AirtableRepository) List() []Location {
+	return r.repo.List()
+}
+
+// Get retrieves a location by ID from the underlying repository.
+func (r *AirtableRepository) Get(id string) (Location, bool) {
+	return r.repo.Get(id)
+}
+
+// Create adds a new location to the repository and syncs it to Airtable.
+func (r *AirtableRepository) Create(ctx context.Context, location Location) (Location, error) {
+	// Create in the underlying repository first
+	created, err := r.repo.Create(ctx, location)
+	if err != nil {
+		return Location{}, err
+	}
+
+	// Save to Airtable
+	airtableFields := created.ToAirtableFields()
+	log.Printf("Attempting to save location to Airtable table: %s", r.airtableTable)
+	airtableRecord, err := r.airtableClient.CreateRecord(ctx, r.airtableTable, airtableFields)
+	if err != nil {
+		// Log error but don't fail - location is already created in repo
+		log.Printf("Failed to save location to Airtable: %v", err)
+		log.Printf("Error details - Table: %s, Fields: %+v", r.airtableTable, airtableFields)
+		return created, nil // Return created location even if Airtable save failed
+	}
+
+	// Update the created location with Airtable ID
+	created.ID = airtableRecord.ID
+	log.Printf("Location saved to Airtable successfully with ID: %s", airtableRecord.ID)
+	return created, nil
+}
+
+// Update modifies an existing location in the underlying repository.
+func (r *AirtableRepository) Update(id string, location Location) (Location, bool) {
+	return r.repo.Update(id, location)
+}
+
+// Delete removes a location from the underlying repository.
+func (r *AirtableRepository) Delete(id string) bool {
+	return r.repo.Delete(id)
 }

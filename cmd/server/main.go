@@ -35,11 +35,17 @@ func main() {
 	bookRepo := book.NewInMemoryRepository(bookSeed)
 	bookHandler := book.NewHandler(bookRepo)
 
-	locationRepo := location.NewInMemoryRepository(locationSeed)
-	locationHandler, err := location.NewHandler(locationRepo, cfg)
+	// Create in-memory repository
+	baseRepo := location.NewInMemoryRepository(locationSeed)
+
+	// Wrap with Airtable repository for persistence
+	airtableClient, err := cfg.NewAirtableClient()
 	if err != nil {
-		log.Fatalf("Failed to create location handler: %v", err)
+		log.Fatalf("Failed to create Airtable client: %v", err)
 	}
+	locationRepo := location.NewAirtableRepository(baseRepo, airtableClient, cfg.Airtable.LocationsTableName)
+
+	locationHandler := location.NewHandler(locationRepo)
 
 	router := server.NewRouter(bookHandler, locationHandler)
 

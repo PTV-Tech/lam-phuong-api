@@ -1,11 +1,7 @@
 package location
 
 import (
-	"log"
 	"net/http"
-
-	"lam-phuong-api/internal/airtable"
-	"lam-phuong-api/internal/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gosimple/slug"
@@ -13,24 +9,14 @@ import (
 
 // Handler exposes HTTP handlers for the location resource.
 type Handler struct {
-	repo           Repository
-	airtableClient *airtable.Client
-	airtableTable  string
+	repo Repository
 }
 
-// NewHandler creates a handler with the provided repository and config.
-func NewHandler(repo Repository, cfg *config.Config) (*Handler, error) {
-	// Create Airtable client from config
-	airtableClient, err := cfg.NewAirtableClient()
-	if err != nil {
-		return nil, err
-	}
-
+// NewHandler creates a handler with the provided repository.
+func NewHandler(repo Repository) *Handler {
 	return &Handler{
-		repo:           repo,
-		airtableClient: airtableClient,
-		airtableTable:  cfg.Airtable.LocationsTableName,
-	}, nil
+		repo: repo,
+	}
 }
 
 // RegisterRoutes attaches location routes to the supplied router group.
@@ -86,24 +72,11 @@ func (h *Handler) CreateLocation(c *gin.Context) {
 		Status: status,
 	}
 
-	// Create in repository first
-	created, err := h.repo.Create(location)
+	// Create in repository (repository handles Airtable sync if configured)
+	created, err := h.repo.Create(c.Request.Context(), location)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Save to Airtable
-	airtableFields := created.ToAirtableFields()
-	airtableRecord, err := h.airtableClient.CreateRecord(c.Request.Context(), h.airtableTable, airtableFields)
-	if err != nil {
-		// Log error but don't fail the request - location is already created in repo
-		log.Printf("Failed to save location to Airtable: %v", err)
-		// Optionally, you could return an error here if you want to ensure Airtable sync
-	} else {
-		// Update the created location with Airtable ID if needed
-		created.ID = airtableRecord.ID
-		log.Printf("Location saved to Airtable with ID: %s", airtableRecord.ID)
 	}
 
 	c.JSON(http.StatusCreated, created)
