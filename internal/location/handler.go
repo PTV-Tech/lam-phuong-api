@@ -27,10 +27,29 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 	router.DELETE("/locations/:slug", h.DeleteLocationBySlug)
 }
 
+// ListLocations godoc
+// @Summary      List all locations
+// @Description  Get a list of all locations
+// @Tags         locations
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   Location
+// @Router       /locations [get]
 func (h *Handler) ListLocations(c *gin.Context) {
 	c.JSON(http.StatusOK, h.repo.List())
 }
 
+// CreateLocation godoc
+// @Summary      Create a new location
+// @Description  Create a new location with name and optional slug. If slug is not provided, it will be generated from the name.
+// @Tags         locations
+// @Accept       json
+// @Produce      json
+// @Param        location  body      locationPayload  true  "Location payload"
+// @Success      201       {object}  Location
+// @Failure      400       {object}  map[string]string
+// @Failure      500       {object}  map[string]string
+// @Router       /locations [post]
 func (h *Handler) CreateLocation(c *gin.Context) {
 	var payload locationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -90,6 +109,17 @@ func ensureUniqueSlug(repo Repository, baseSlug string) string {
 	}
 }
 
+// DeleteLocationBySlug godoc
+// @Summary      Delete a location by slug
+// @Description  Delete a location using its slug
+// @Tags         locations
+// @Accept       json
+// @Produce      json
+// @Param        slug  path      string  true  "Location slug"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Router       /locations/{slug} [delete]
 func (h *Handler) DeleteLocationBySlug(c *gin.Context) {
 	slugParam := c.Param("slug")
 	if slugParam == "" {

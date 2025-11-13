@@ -3,11 +3,28 @@ package main
 import (
 	"log"
 
+	_ "lam-phuong-api/docs" // Import docs for Swagger
 	"lam-phuong-api/internal/config"
 	"lam-phuong-api/internal/location"
 	"lam-phuong-api/internal/server"
 )
 
+// @title           Lam Phuong API
+// @version         1.0
+// @description     API for managing locations
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /api
+
+// @schemes   http https
 func main() {
 	// Load configuration
 	cfg, err := config.Load()

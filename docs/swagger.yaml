@@ -1,0 +1,125 @@
+basePath: /api
+definitions:
+  location.Location:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  location.locationPayload:
+    properties:
+      name:
+        description: Required
+        type: string
+      slug:
+        description: Optional, will be generated from name if not provided
+        type: string
+    required:
+    - name
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for managing locations
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Lam Phuong API
+  version: "1.0"
+paths:
+  /locations:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all locations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/location.Location'
+            type: array
+      summary: List all locations
+      tags:
+      - locations
+    post:
+      consumes:
+      - application/json
+      description: Create a new location with name and optional slug. If slug is not
+        provided, it will be generated from the name.
+      parameters:
+      - description: Location payload
+        in: body
+        name: location
+        required: true
+        schema:
+          $ref: '#/definitions/location.locationPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/location.Location'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new location
+      tags:
+      - locations
+  /locations/{slug}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a location using its slug
+      parameters:
+      - description: Location slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a location by slug
+      tags:
+      - locations
+schemes:
+- http
+- https
+swagger: "2.0"

@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"lam-phuong-api/internal/location"
 )
@@ -19,6 +21,9 @@ func NewRouter(locationHandler *location.Handler) *gin.Engine {
 		})
 		locationHandler.RegisterRoutes(api)
 	}
+
+	// Swagger documentation
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return router
 }
