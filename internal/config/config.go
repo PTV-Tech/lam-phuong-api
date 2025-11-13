@@ -27,8 +27,9 @@ type ServerConfig struct {
 
 // AirtableConfig holds Airtable-related configuration
 type AirtableConfig struct {
-	APIKey string `mapstructure:"api_key"`
-	BaseID string `mapstructure:"base_id"`
+	APIKey             string `mapstructure:"api_key"`
+	BaseID             string `mapstructure:"base_id"`
+	LocationsTableName string `mapstructure:"locations_table_name"`
 }
 
 var (
@@ -85,6 +86,7 @@ func setDefaults() {
 	// Airtable defaults (empty - should be set via env vars)
 	viper.SetDefault("airtable.api_key", "")
 	viper.SetDefault("airtable.base_id", "")
+	viper.SetDefault("airtable.locations_table_name", "Địa điểm")
 }
 
 // Validate checks if required configuration values are set
@@ -101,6 +103,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("airtable base ID is required (set AIRTABLE_BASE_ID)")
 	}
 
+	// LocationsTableName has a default value, so it's optional but we ensure it's set
+	if c.Airtable.LocationsTableName == "" {
+		c.Airtable.LocationsTableName = "Địa điểm" // Fallback to default if somehow empty
+	}
+
 	return nil
 }
 
@@ -113,4 +120,3 @@ func (c *Config) ServerAddress() string {
 func (c *Config) NewAirtableClient() (*airtable.Client, error) {
 	return airtable.NewClient(c.Airtable.APIKey, c.Airtable.BaseID)
 }
-

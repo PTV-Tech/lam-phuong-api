@@ -28,15 +28,18 @@ func main() {
 	}
 
 	locationSeed := []location.Location{
-		{ID: "1", Name: "Main Library", Address: "123 Main St", City: "Go City"},
-		{ID: "2", Name: "West Branch", Address: "456 Elm St", City: "Go City"},
+		{ID: "1", Name: "Main Library", Slug: "main-library", Status: location.StatusActive},
+		{ID: "2", Name: "West Branch", Slug: "west-branch", Status: location.StatusActive},
 	}
 
 	bookRepo := book.NewInMemoryRepository(bookSeed)
 	bookHandler := book.NewHandler(bookRepo)
 
 	locationRepo := location.NewInMemoryRepository(locationSeed)
-	locationHandler := location.NewHandler(locationRepo)
+	locationHandler, err := location.NewHandler(locationRepo, cfg)
+	if err != nil {
+		log.Fatalf("Failed to create location handler: %v", err)
+	}
 
 	router := server.NewRouter(bookHandler, locationHandler)
 

@@ -46,6 +46,7 @@ The project uses **`.env` files** for configuration (recommended for development
 - `SERVER_HOST` - Server host (default: `0.0.0.0`)
 - `AIRTABLE_API_KEY` - Your Airtable API key (required)
 - `AIRTABLE_BASE_ID` - Your Airtable base ID (required)
+- `AIRTABLE_LOCATIONS_TABLE_NAME` - Airtable table name for locations (default: `Địa điểm`)
 
 See `internal/config/README.md` for more details on configuration.
 
