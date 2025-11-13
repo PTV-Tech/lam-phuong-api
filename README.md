@@ -58,7 +58,6 @@ lam-phuong-api/
 │   └── server/          # Application entry point
 ├── internal/
 │   ├── airtable/        # Airtable client wrapper
-│   ├── book/            # Book domain
 │   ├── config/          # Configuration management
 │   ├── location/        # Location domain
 │   └── server/          # HTTP server setup
@@ -83,7 +82,21 @@ go run cmd/server/main.go
 
 # Build
 go build -o bin/server cmd/server/main.go
+
+# Live reload (with Air)
+air
 ```
+
+### Live Reload (Air)
+
+For automatic rebuilds and restarts during development, install and use [Air](https://github.com/cosmtrek/air):
+
+```bash
+go install github.com/cosmtrek/air@latest
+air
+```
+
+Air reads the `.air.toml` file in the project root to watch Go files and restart the server when changes are detected.
 
 ## Security Notes
 

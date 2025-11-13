@@ -1,0 +1,23 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/server ./cmd/server"
+  bin = "./tmp/server"
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "vendor"]
+  exclude_file = ["README.md"]
+  exclude_regex = ["_test\\.go"]
+  follow_symlink = false
+  stop_on_error = true
+
+[log]
+  time = true
+
+[serve]
+  cmd = "./tmp/server"
+  delay = "200ms"
+  grace = "1s"
+  kill_signal = "SIGTERM"
+  restart_delay = "200ms"
+

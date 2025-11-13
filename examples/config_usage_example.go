@@ -30,7 +30,7 @@ func exampleWithParameter(cfg *config.Config) {
 	}
 	
 	// Use the client
-	records, err := client.ListRecords(context.Background(), "Books", nil)
+	records, err := client.ListRecords(context.Background(), "Locations", nil)
 	if err != nil {
 		log.Printf("Error listing records: %v", err)
 		return
@@ -40,19 +40,19 @@ func exampleWithParameter(cfg *config.Config) {
 }
 
 // Example 3: Service with Config Dependency
-type BookService struct {
+type LocationService struct {
 	cfg *config.Config
 }
 
-func NewBookService(cfg *config.Config) *BookService {
-	return &BookService{cfg: cfg}
+func NewLocationService(cfg *config.Config) *LocationService {
+	return &LocationService{cfg: cfg}
 }
 
-func (s *BookService) GetAirtableConfig() (string, string) {
+func (s *LocationService) GetAirtableConfig() (string, string) {
 	return s.cfg.Airtable.APIKey, s.cfg.Airtable.BaseID
 }
 
-func (s *BookService) GetServerInfo() string {
+func (s *LocationService) GetServerInfo() string {
 	return s.cfg.ServerAddress()
 }
 
@@ -99,8 +99,8 @@ func main() {
 
 	// Example 3: Service with config
 	fmt.Println("\n=== Example 3: Service with Config ===")
-	bookService := NewBookService(cfg)
-	fmt.Printf("Server info: %s\n", bookService.GetServerInfo())
+	locationService := NewLocationService(cfg)
+	fmt.Printf("Server info: %s\n", locationService.GetServerInfo())
 
 	// Example 4: Handler with config
 	fmt.Println("\n=== Example 4: Handler with Config ===")

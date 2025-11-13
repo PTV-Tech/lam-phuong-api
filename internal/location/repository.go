@@ -6,6 +6,7 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"lam-phuong-api/internal/airtable"
@@ -14,10 +15,8 @@ import (
 // Repository defines behavior for storing and retrieving locations.
 type Repository interface {
 	List() []Location
-	Get(id string) (Location, bool)
 	Create(ctx context.Context, location Location) (Location, error)
-	Update(id string, location Location) (Location, bool)
-	Delete(id string) bool
+	DeleteBySlug(slug string) bool
 }
 
 // InMemoryRepository stores locations in memory and is safe for concurrent access.
@@ -63,15 +62,6 @@ func (r *InMemoryRepository) List() []Location {
 	return locations
 }
 
-// Get retrieves a location by ID.
-func (r *InMemoryRepository) Get(id string) (Location, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	location, ok := r.data[id]
-	return location, ok
-}
-
 // Create adds a new location and automatically assigns an ID.
 // Note: ctx parameter is for interface compatibility but not used in in-memory implementation.
 func (r *InMemoryRepository) Create(ctx context.Context, location Location) (Location, error) {
@@ -85,30 +75,24 @@ func (r *InMemoryRepository) Create(ctx context.Context, location Location) (Loc
 	return location, nil
 }
 
-// Update modifies an existing location record.
-func (r *InMemoryRepository) Update(id string, location Location) (Location, bool) {
+// DeleteBySlug removes a location by its slug.
+func (r *InMemoryRepository) DeleteBySlug(slug string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.data[id]; !exists {
-		return Location{}, false
+	var targetID string
+	for id, loc := range r.data {
+		if loc.Slug == slug {
+			targetID = id
+			break
+		}
 	}
 
-	location.ID = id
-	r.data[id] = location
-	return location, true
-}
-
-// Delete removes a location by ID.
-func (r *InMemoryRepository) Delete(id string) bool {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, exists := r.data[id]; !exists {
+	if targetID == "" {
 		return false
 	}
 
-	delete(r.data, id)
+	delete(r.data, targetID)
 	return true
 }
 
@@ -154,11 +138,6 @@ func (r *AirtableRepository) List() []Location {
 	return locations
 }
 
-// Get retrieves a location by ID from the underlying repository.
-func (r *AirtableRepository) Get(id string) (Location, bool) {
-	return r.repo.Get(id)
-}
-
 // Create adds a new location to the repository and syncs it to Airtable.
 func (r *AirtableRepository) Create(ctx context.Context, location Location) (Location, error) {
 	// Create in the underlying repository first
@@ -184,26 +163,47 @@ func (r *AirtableRepository) Create(ctx context.Context, location Location) (Loc
 	return created, nil
 }
 
-// Update modifies an existing location in the underlying repository.
-func (r *AirtableRepository) Update(id string, location Location) (Location, bool) {
-	return r.repo.Update(id, location)
-}
+// DeleteBySlug removes a location by its slug.
+func (r *AirtableRepository) DeleteBySlug(slug string) bool {
+	// Delete from underlying repository
+	deleted := r.repo.DeleteBySlug(slug)
 
-// Delete removes a location from the underlying repository.
-func (r *AirtableRepository) Delete(id string) bool {
-	return r.repo.Delete(id)
+	// Attempt to delete from Airtable
+	filterValue := escapeAirtableFormulaValue(slug)
+	params := &airtable.ListParams{
+		FilterByFormula: fmt.Sprintf("{%s} = '%s'", FieldSlug, filterValue),
+	}
+
+	records, err := r.airtableClient.ListRecords(context.Background(), r.airtableTable, params)
+	if err != nil {
+		log.Printf("Failed to query Airtable for slug %s: %v", slug, err)
+		return deleted
+	}
+
+	if len(records) == 0 {
+		return deleted
+	}
+
+	ids := make([]string, 0, len(records))
+	for _, record := range records {
+		ids = append(ids, record.ID)
+	}
+
+	if err := r.airtableClient.BulkDeleteRecords(context.Background(), r.airtableTable, ids); err != nil {
+		log.Printf("Failed to delete Airtable records for slug %s: %v", slug, err)
+	}
+
+	return deleted || len(ids) > 0
 }
 
 func mapAirtableRecord(record airtable.Record) (Location, error) {
-	status, err := getStatusFromFields(record.Fields)
-	if err != nil {
-		return Location{}, fmt.Errorf("invalid status for record %s: %w", record.ID, err)
-	}
-
 	return Location{
 		ID:     record.ID,
 		Name:   getStringField(record.Fields, FieldName),
 		Slug:   getStringField(record.Fields, FieldSlug),
-		Status: status,
 	}, nil
+}
+
+func escapeAirtableFormulaValue(value string) string {
+	return strings.ReplaceAll(value, "'", "''")
 }

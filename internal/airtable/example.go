@@ -20,7 +20,7 @@ func ExampleUsage() {
 	}
 
 	ctx := context.Background()
-	tableName := "Books" // Replace with your table name
+	tableName := "Locations" // Replace with your table name
 
 	// Example 1: List all records
 	records, err := client.ListRecords(ctx, tableName, nil)
@@ -36,7 +36,7 @@ func ExampleUsage() {
 	// Example 2: List records with filters and sorting
 	params := &ListParams{
 		View:            "Grid view",
-		FilterByFormula: `AND({Status}='Active', {Price}>100)`,
+		FilterByFormula: `{Slug}='main-library'`,
 		Sort: []SortParam{
 			{Field: "Created", Direction: "desc"},
 		},

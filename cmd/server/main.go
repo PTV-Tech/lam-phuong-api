@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"lam-phuong-api/internal/book"
 	"lam-phuong-api/internal/config"
 	"lam-phuong-api/internal/location"
 	"lam-phuong-api/internal/server"
@@ -22,18 +21,10 @@ func main() {
 	}
 
 	// Initialize seed data
-	bookSeed := []book.Book{
-		{ID: "1", Title: "The Go Programming Language", Author: "Alan A. A. Donovan"},
-		{ID: "2", Title: "Introducing Go", Author: "Caleb Doxsey"},
-	}
-
 	locationSeed := []location.Location{
-		{ID: "1", Name: "Main Library", Slug: "main-library", Status: location.StatusActive},
-		{ID: "2", Name: "West Branch", Slug: "west-branch", Status: location.StatusActive},
+		{ID: "1", Name: "Main Library", Slug: "main-library"},
+		{ID: "2", Name: "West Branch", Slug: "west-branch"},
 	}
-
-	bookRepo := book.NewInMemoryRepository(bookSeed)
-	bookHandler := book.NewHandler(bookRepo)
 
 	// Create in-memory repository
 	baseRepo := location.NewInMemoryRepository(locationSeed)
@@ -47,7 +38,7 @@ func main() {
 
 	locationHandler := location.NewHandler(locationRepo)
 
-	router := server.NewRouter(bookHandler, locationHandler)
+	router := server.NewRouter(locationHandler)
 
 	// Use server address from config
 	serverAddr := cfg.ServerAddress()

@@ -23,25 +23,12 @@ func NewHandler(repo Repository) *Handler {
 // RegisterRoutes attaches location routes to the supplied router group.
 func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 	router.GET("/locations", h.ListLocations)
-	router.GET("/locations/:id", h.GetLocation)
 	router.POST("/locations", h.CreateLocation)
-	router.PUT("/locations/:id", h.UpdateLocation)
-	router.DELETE("/locations/:id", h.DeleteLocation)
+	router.DELETE("/locations/:slug", h.DeleteLocationBySlug)
 }
 
 func (h *Handler) ListLocations(c *gin.Context) {
 	c.JSON(http.StatusOK, h.repo.List())
-}
-
-func (h *Handler) GetLocation(c *gin.Context) {
-	id := c.Param("id")
-	location, ok := h.repo.Get(id)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "location not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, location)
 }
 
 func (h *Handler) CreateLocation(c *gin.Context) {
@@ -61,20 +48,9 @@ func (h *Handler) CreateLocation(c *gin.Context) {
 
 	locationSlug = ensureUniqueSlug(h.repo, locationSlug)
 
-	// Validate status if provided, default to active
-	status := StatusActive
-	if payload.Status != "" {
-		status = Status(payload.Status)
-		if !status.IsValid() {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status. must be 'Active' or 'Disabled'"})
-			return
-		}
-	}
-
 	location := Location{
-		Name:   payload.Name,
-		Slug:   locationSlug,
-		Status: status,
+		Name: payload.Name,
+		Slug: locationSlug,
 	}
 
 	// Create in repository (repository handles Airtable sync if configured)
@@ -87,62 +63,9 @@ func (h *Handler) CreateLocation(c *gin.Context) {
 	c.JSON(http.StatusCreated, created)
 }
 
-func (h *Handler) UpdateLocation(c *gin.Context) {
-	id := c.Param("id")
-
-	var payload locationPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Validate status if provided
-	var status Status
-	if payload.Status != "" {
-		status = Status(payload.Status)
-		if !status.IsValid() {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status. must be 'active' or 'disabled'"})
-			return
-		}
-	} else {
-		// Get existing location to preserve status if not provided
-		existing, ok := h.repo.Get(id)
-		if !ok {
-			c.JSON(http.StatusNotFound, gin.H{"error": "location not found"})
-			return
-		}
-		status = existing.Status
-	}
-
-	location := Location{
-		Name:   payload.Name,
-		Slug:   payload.Slug,
-		Status: status,
-	}
-
-	updated, ok := h.repo.Update(id, location)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "location not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, updated)
-}
-
-func (h *Handler) DeleteLocation(c *gin.Context) {
-	id := c.Param("id")
-	if ok := h.repo.Delete(id); !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "location not found"})
-		return
-	}
-
-	c.Status(http.StatusNoContent)
-}
-
 type locationPayload struct {
-	Name   string `json:"name" binding:"required"` // Required
-	Slug   string `json:"slug"`                    // Optional, will be generated from name if not provided
-	Status string `json:"status"`                  // Optional, defaults to "Active"
+	Name string `json:"name" binding:"required"` // Required
+	Slug string `json:"slug"`                    // Optional, will be generated from name if not provided
 }
 
 func ensureUniqueSlug(repo Repository, baseSlug string) string {
@@ -165,4 +88,25 @@ func ensureUniqueSlug(repo Repository, baseSlug string) string {
 			return candidate
 		}
 	}
+}
+
+func (h *Handler) DeleteLocationBySlug(c *gin.Context) {
+	slugParam := c.Param("slug")
+	if slugParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "slug is required"})
+		return
+	}
+
+	normalizedSlug := slug.Make(slugParam)
+	if normalizedSlug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid slug"})
+		return
+	}
+
+	if ok := h.repo.DeleteBySlug(normalizedSlug); !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "location not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
 }
