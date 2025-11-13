@@ -4,11 +4,24 @@ import (
 	"log"
 
 	"lam-phuong-api/internal/book"
+	"lam-phuong-api/internal/config"
 	"lam-phuong-api/internal/location"
 	"lam-phuong-api/internal/server"
 )
 
 func main() {
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Validate required configuration
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Invalid configuration: %v", err)
+	}
+
+	// Initialize seed data
 	bookSeed := []book.Book{
 		{ID: "1", Title: "The Go Programming Language", Author: "Alan A. A. Donovan"},
 		{ID: "2", Title: "Introducing Go", Author: "Caleb Doxsey"},
@@ -27,7 +40,10 @@ func main() {
 
 	router := server.NewRouter(bookHandler, locationHandler)
 
-	if err := router.Run(":8080"); err != nil {
+	// Use server address from config
+	serverAddr := cfg.ServerAddress()
+	log.Printf("Starting server on %s", serverAddr)
+	if err := router.Run(serverAddr); err != nil {
 		log.Fatalf("failed to run server: %v", err)
 	}
 }
