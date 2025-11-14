@@ -22,6 +22,9 @@ AIRTABLE_API_KEY=your_api_key_here
 AIRTABLE_BASE_ID=your_base_id_here
 AUTH_JWT_SECRET=your_jwt_secret_key_here
 AUTH_TOKEN_EXPIRY=24
+SWAGGER_HOST=localhost:8080
+# Optional: comma separated list, e.g. https,http
+SWAGGER_SCHEMES=http
 ```
 
 **Note:** Generate a secure random string for `AUTH_JWT_SECRET` (e.g., use `openssl rand -base64 32`)
@@ -60,6 +63,8 @@ The project uses **`.env` files** for configuration (recommended for development
 **Server:**
 - `SERVER_PORT` - Server port (default: `8080`)
 - `SERVER_HOST` - Server host (default: `0.0.0.0`)
+- `SWAGGER_HOST` - Hostname (and port) used by Swagger UI (default: `SERVER_HOST:SERVER_PORT`)
+- `SWAGGER_SCHEMES` - Optional comma-separated schemes for Swagger (default: `https,http` when not localhost)
 
 **Airtable:**
 - `AIRTABLE_API_KEY` - Your Airtable API key (required)

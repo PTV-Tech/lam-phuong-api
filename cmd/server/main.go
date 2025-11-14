@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"os"
+	"strings"
 	"time"
 
-	_ "lam-phuong-api/docs" // Import docs for Swagger
+	docs "lam-phuong-api/docs" // Import docs for Swagger
 	"lam-phuong-api/internal/config"
 	"lam-phuong-api/internal/location"
 	"lam-phuong-api/internal/server"
@@ -57,6 +59,31 @@ func main() {
 	// Validate required configuration
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("Invalid configuration: %v", err)
+	}
+
+	// Configure Swagger host/schemes so deployed instances don't default to localhost
+	swaggerHost := strings.TrimSpace(os.Getenv("SWAGGER_HOST"))
+	if swaggerHost == "" {
+		swaggerHost = cfg.ServerAddress()
+	}
+	docs.SwaggerInfo.Host = swaggerHost
+
+	if schemesEnv := strings.TrimSpace(os.Getenv("SWAGGER_SCHEMES")); schemesEnv != "" {
+		parts := strings.Split(schemesEnv, ",")
+		docs.SwaggerInfo.Schemes = nil
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				docs.SwaggerInfo.Schemes = append(docs.SwaggerInfo.Schemes, part)
+			}
+		}
+	} else {
+		// Default to https for non-local hosts
+		if strings.Contains(swaggerHost, "localhost") || strings.HasPrefix(swaggerHost, "127.") {
+			docs.SwaggerInfo.Schemes = []string{"http"}
+		} else {
+			docs.SwaggerInfo.Schemes = []string{"https", "http"}
+		}
 	}
 
 	// Initialize seed data
