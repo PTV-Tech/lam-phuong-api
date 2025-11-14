@@ -158,7 +158,7 @@ func (r *AirtableRepository) Create(ctx context.Context, user User) (User, error
 	}
 
 	// Save to Airtable
-	airtableFields := created.ToAirtableFields()
+	airtableFields := created.ToAirtableFieldsForCreate()
 	log.Printf("Attempting to save user to Airtable table: %s", r.airtableTable)
 	airtableRecord, err := r.airtableClient.CreateRecord(ctx, r.airtableTable, airtableFields)
 	if err != nil {
@@ -196,10 +196,15 @@ func (r *AirtableRepository) GetByEmail(email string) (User, bool) {
 }
 
 func mapAirtableRecord(record airtable.Record) (User, error) {
+	role := getStringField(record.Fields, FieldRole)
+	if role == "" {
+		role = RoleUser // Default role
+	}
 	return User{
 		ID:       record.ID,
 		Email:    getStringField(record.Fields, FieldEmail),
 		Password: getStringField(record.Fields, FieldPassword),
+		Role:     role,
 	}, nil
 }
 

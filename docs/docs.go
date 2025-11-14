@@ -252,7 +252,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get a list of all users (requires authentication)",
+                "description": "Get a list of all users (requires admin role)",
                 "consumes": [
                     "application/json"
                 ],
@@ -281,6 +281,15 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
@@ -290,7 +299,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new user with email and password (requires authentication)",
+                "description": "Create a new user with email, password, and optional role (requires admin role)",
                 "consumes": [
                     "application/json"
                 ],
@@ -337,6 +346,15 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -365,7 +383,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a user using its ID (requires authentication)",
+                "description": "Delete a user using its ID (requires admin role)",
                 "consumes": [
                     "application/json"
                 ],
@@ -395,6 +413,15 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -486,6 +513,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "role": {
+                    "type": "string"
                 }
             }
         },
@@ -502,6 +532,9 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 6
+                },
+                "role": {
+                    "type": "string"
                 }
             }
         }

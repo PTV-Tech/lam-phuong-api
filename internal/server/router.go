@@ -41,6 +41,16 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwt
 		protected := api.Group("")
 		protected.Use(user.AuthMiddleware(jwtSecret))
 		{
+			// User management routes (admin only)
+			adminRoutes := protected.Group("")
+			adminRoutes.Use(user.RequireAdmin())
+			{
+				adminRoutes.GET("/users", userHandler.ListUsers)
+				adminRoutes.POST("/users", userHandler.CreateUser)
+				adminRoutes.DELETE("/users/:id", userHandler.DeleteUser)
+			}
+
+			// Location routes (authenticated users)
 			locationHandler.RegisterRoutes(protected)
 		}
 	}

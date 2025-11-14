@@ -10,9 +10,22 @@ import (
 
 // Airtable field names
 const (
-	FieldEmail    = "Email"
-	FieldPassword = "Password"
+	FieldEmail     = "Email"
+	FieldPassword  = "Password"
+	FieldRole      = "Role"
+	FieldCreatedAt = "CreatedAt"
+	FieldUpdatedAt = "UpdatedAt"
 )
+
+// User roles
+const (
+	RoleSuperAdmin = "Super Admin"
+	RoleAdmin      = "Admin"
+	RoleUser       = "User"
+)
+
+// ValidRoles contains all valid user roles
+var ValidRoles = []string{RoleSuperAdmin, RoleAdmin, RoleUser}
 
 // Helper functions
 func getStringField(fields map[string]interface{}, key string) string {
@@ -29,14 +42,13 @@ type User struct {
 	ID       string `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"-"` // Never serialize password in JSON responses
+	Role     string `json:"role"`
 }
 
-// ToAirtableFields converts a User to Airtable fields format
+// ToAirtableFields converts a User to Airtable fields format (for creation)
+// Deprecated: Use ToAirtableFieldsForCreate() instead
 func (u *User) ToAirtableFields() map[string]interface{} {
-	return map[string]interface{}{
-		FieldEmail:    u.Email,
-		FieldPassword: u.Password, // Already hashed
-	}
+	return u.ToAirtableFieldsForCreate()
 }
 
 // FromAirtable maps an Airtable record to a User
@@ -55,10 +67,16 @@ func FromAirtable(record map[string]interface{}) (*User, error) {
 		return nil, fmt.Errorf("invalid record: missing or invalid 'fields'")
 	}
 
+	role := getStringField(fields, FieldRole)
+	if role == "" {
+		role = RoleUser // Default role
+	}
+
 	return &User{
 		ID:       id,
 		Email:    getStringField(fields, FieldEmail),
 		Password: getStringField(fields, FieldPassword),
+		Role:     role,
 	}, nil
 }
 
@@ -81,23 +99,29 @@ func CheckPassword(hashedPassword, password string) bool {
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
 // TokenResponse represents the response after successful authentication
 type TokenResponse struct {
-	AccessToken string    `json:"access_token"`
-	TokenType   string    `json:"token_type"`
-	ExpiresIn   int64     `json:"expires_in"`
-	User        User      `json:"user"`
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int64  `json:"expires_in"`
+	User        User   `json:"user"`
 }
 
 // GenerateToken generates a JWT token for the user
 func GenerateToken(user User, secretKey string, expiresIn time.Duration) (string, error) {
 	expirationTime := time.Now().Add(expiresIn)
+	role := user.Role
+	if role == "" {
+		role = RoleUser // Default role
+	}
 	claims := &Claims{
 		UserID: user.ID,
 		Email:  user.Email,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -125,4 +149,3 @@ func ValidateToken(tokenString, secretKey string) (*Claims, error) {
 
 	return claims, nil
 }
-

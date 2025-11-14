@@ -56,13 +56,14 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 
 // ListUsers godoc
 // @Summary      List all users
-// @Description  Get a list of all users (requires authentication)
+// @Description  Get a list of all users (requires admin role)
 // @Tags         users
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200  {array}   User
 // @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
 // @Router       /users [get]
 func (h *Handler) ListUsers(c *gin.Context) {
 	users := h.repo.List()
@@ -75,7 +76,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 
 // CreateUser godoc
 // @Summary      Create a new user
-// @Description  Create a new user with email and password (requires authentication)
+// @Description  Create a new user with email, password, and optional role (requires admin role)
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -84,6 +85,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 // @Success      201   {object}  User
 // @Failure      400   {object}  map[string]string
 // @Failure      401   {object}  map[string]string
+// @Failure      403   {object}  map[string]string
 // @Failure      409   {object}  map[string]string
 // @Failure      500   {object}  map[string]string
 // @Router       /users [post]
@@ -101,9 +103,29 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// Validate and set role
+	role := payload.Role
+	if role == "" {
+		role = RoleUser // Default role
+	} else {
+		// Validate role
+		validRole := false
+		for _, valid := range ValidRoles {
+			if role == valid {
+				validRole = true
+				break
+			}
+		}
+		if !validRole {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role. Valid roles: " + joinRoles(ValidRoles)})
+			return
+		}
+	}
+
 	user := User{
 		Email:    payload.Email,
 		Password: hashedPassword,
+		Role:     role,
 	}
 
 	// Create in repository (repository handles Airtable sync if configured)
@@ -125,7 +147,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 
 // DeleteUser godoc
 // @Summary      Delete a user by ID
-// @Description  Delete a user using its ID (requires authentication)
+// @Description  Delete a user using its ID (requires admin role)
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -133,6 +155,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 // @Param        id  path      string  true  "User ID"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Router       /users/{id} [delete]
 func (h *Handler) DeleteUser(c *gin.Context) {
@@ -153,4 +176,5 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 type createUserPayload struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
+	Role     string `json:"role"`
 }
