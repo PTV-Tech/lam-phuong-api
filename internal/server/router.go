@@ -13,8 +13,18 @@ import (
 	"lam-phuong-api/internal/user"
 )
 
+// ✅ THÊM STRUCT VersionInfo
+type VersionInfo struct {
+	Version    string `json:"version"`
+	CommitHash string `json:"commit_hash"`
+	BuildTime  string `json:"build_time"`
+	Status     string `json:"status"`
+}
+
 // NewRouter constructs a Gin engine configured with middleware and routes.
-func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwtSecret string) *gin.Engine {
+func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwtSecret string, version string,
+	commitHash string,
+	buildTime string) *gin.Engine {
 	router := gin.Default()
 
 	// Configure CORS middleware
@@ -27,13 +37,33 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwt
 		MaxAge:           12 * time.Hour,
 	}))
 
+	// ✅ THÊM HEALTH ENDPOINT
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
+
+	// ✅ THÊM VERSION ENDPOINT
+	router.GET("/version", func(c *gin.Context) {
+		c.JSON(http.StatusOK, VersionInfo{
+			Version:    version,
+			CommitHash: commitHash,
+			BuildTime:  buildTime,
+			Status:     "running",
+		})
+	})
+
+	// ✅ THÊM PING ENDPOINT (cho Swagger)
+	router.GET("/api/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"version": version,
+		})
+	})
+
 	api := router.Group("/api")
 	{
-		// Public routes
-		api.GET("/ping", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
-		})
-
 		// Auth routes (public)
 		userHandler.RegisterRoutes(api)
 

@@ -11,6 +11,13 @@ import (
 	"lam-phuong-api/internal/user"
 )
 
+// ✅ THÊM PHẦN NÀY - Version info được inject khi build
+var (
+	Version    = "dev"
+	CommitHash = "unknown"
+	BuildTime  = "unknown"
+)
+
 // @title           Lam Phuong API
 // @version         1.0
 // @description     API for managing locations
@@ -33,6 +40,14 @@ import (
 // @name                        Authorization
 // @description                 Type "Bearer" followed by a space and JWT token.
 func main() {
+	// ✅ THÊM LOG VERSION KHI KHỞI ĐỘNG
+	log.Printf("========================================")
+	log.Printf("🚀 Lam Phuong API")
+	log.Printf("📦 Version: %s", Version)
+	log.Printf("🔖 Commit: %s", CommitHash)
+	log.Printf("🕒 Build Time: %s", BuildTime)
+	log.Printf("========================================")
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -75,7 +90,8 @@ func main() {
 	tokenExpiry := time.Duration(cfg.Auth.TokenExpiry) * time.Hour
 	userHandler := user.NewHandler(userRepo, cfg.Auth.JWTSecret, tokenExpiry)
 
-	router := server.NewRouter(locationHandler, userHandler, cfg.Auth.JWTSecret)
+	// ✅ THÊM VERSION INFO VÀO ROUTER
+	router := server.NewRouter(locationHandler, userHandler, cfg.Auth.JWTSecret, Version, CommitHash, BuildTime)
 
 	// Use server address from config
 	serverAddr := cfg.ServerAddress()
