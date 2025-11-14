@@ -20,7 +20,11 @@ SERVER_PORT=8080
 SERVER_HOST=0.0.0.0
 AIRTABLE_API_KEY=your_api_key_here
 AIRTABLE_BASE_ID=your_base_id_here
+AUTH_JWT_SECRET=your_jwt_secret_key_here
+AUTH_TOKEN_EXPIRY=24
 ```
+
+**Note:** Generate a secure random string for `AUTH_JWT_SECRET` (e.g., use `openssl rand -base64 32`)
 
 ### 2. Get Airtable credentials
 
@@ -52,16 +56,44 @@ The Swagger UI provides interactive API documentation where you can:
 The project uses **`.env` files** for configuration (recommended for development and simplicity).
 
 **Environment Variables:**
+
+**Server:**
 - `SERVER_PORT` - Server port (default: `8080`)
 - `SERVER_HOST` - Server host (default: `0.0.0.0`)
+
+**Airtable:**
 - `AIRTABLE_API_KEY` - Your Airtable API key (required)
 - `AIRTABLE_BASE_ID` - Your Airtable base ID (required)
 - `AIRTABLE_LOCATIONS_TABLE_NAME` - Airtable table name for locations (default: `Địa điểm`)
+- `AIRTABLE_USERS_TABLE_NAME` - Airtable table name for users (default: `Người dùng`)
 
+**Authentication:**
+- `AUTH_JWT_SECRET` - Secret key for JWT token signing (required)
+- `AUTH_TOKEN_EXPIRY` - JWT token expiry in hours (default: `24`)
 
 ## API Endpoints
 
-### Locations
+### Authentication
+
+- **POST** `/api/auth/login` - User login
+  - Body: `{ "email": "string" (required), "password": "string" (required) }`
+  - Returns: `{ "access_token": "jwt_token", "token_type": "Bearer", "expires_in": 86400, "user": {...} }`
+
+**Note:** All protected endpoints require authentication. Include the JWT token in the `Authorization` header:
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+### Users (Protected - Requires Authentication)
+
+- **GET** `/api/users` - List all users
+- **POST** `/api/users` - Create a new user
+  - Body: `{ "email": "string" (required, valid email), "password": "string" (required, min 6 characters) }`
+  - Password is automatically hashed using bcrypt
+  - Returns 409 Conflict if email already exists
+- **DELETE** `/api/users/:id` - Delete a user by ID
+
+### Locations (Protected - Requires Authentication)
 
 - **GET** `/api/locations` - List all locations
 - **POST** `/api/locations` - Create a new location
@@ -92,6 +124,10 @@ lam-phuong-api/
 │   ├── location/        # Location domain
 │   │   ├── handler.go   # HTTP handlers
 │   │   ├── model.go     # Location model
+│   │   └── repository.go # Repository implementations
+│   ├── user/            # User domain
+│   │   ├── handler.go   # HTTP handlers
+│   │   ├── model.go     # User model with password hashing
 │   │   └── repository.go # Repository implementations
 │   └── server/          # HTTP server setup
 ├── .env                 # Environment variables (gitignored)
