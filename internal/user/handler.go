@@ -28,14 +28,13 @@ func NewHandler(repo Repository, jwtSecret string, tokenExpiry time.Duration) *H
 func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 	// Public routes
 	router.POST("/auth/login", h.LoginHandler)
-	router.POST("/users", h.CreateUser)
 
 	// Protected routes
 	protected := router.Group("")
 	protected.Use(AuthMiddleware(h.jwtSecret))
 	{
 		protected.GET("/users", h.ListUsers)
-		// protected.POST("/users", h.CreateUser)
+		protected.POST("/users", h.CreateUser)
 		protected.DELETE("/users/:id", h.DeleteUser)
 	}
 }
