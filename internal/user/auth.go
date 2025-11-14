@@ -63,7 +63,7 @@ func (h *Handler) Login(c *gin.Context, jwtSecret string, tokenExpiry time.Durat
 	// Get user by email
 	user, ok := h.repo.GetByEmail(req.Email)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password."})
 		return
 	}
 
@@ -91,4 +91,3 @@ func (h *Handler) Login(c *gin.Context, jwtSecret string, tokenExpiry time.Durat
 		User:        user,
 	})
 }
-
