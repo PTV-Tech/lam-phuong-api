@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ### Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24.5-alpine AS builder
 WORKDIR /app
 
 # Copy go.mod trước để cache
