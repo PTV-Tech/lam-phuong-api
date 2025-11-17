@@ -42,7 +42,7 @@ func NewServiceWithTLS(smtpHost, smtpPort, smtpUsername, smtpPassword, fromEmail
 // SendVerificationEmail sends an email verification email to the user
 func (s *Service) SendVerificationEmail(toEmail, verificationToken, baseURL string) error {
 	verificationURL := fmt.Sprintf("%s/api/auth/verify-email?token=%s", baseURL, verificationToken)
-	
+
 	subject := "Verify Your Email Address"
 	body := fmt.Sprintf(`Hello,
 
@@ -109,8 +109,19 @@ func (s *Service) sendEmail(toEmail, subject, body string) error {
 	var client *smtp.Client
 	var err error
 
-	if s.useTLS {
-		// Use TLS connection
+	// Determine connection type based on port and TLS setting
+	// Port 465: Direct TLS (implicit TLS)
+	// Port 587/25: STARTTLS (plain connection then upgrade)
+	// Other ports: Use TLS setting to determine
+
+	port := s.smtpPort
+	if port == "" {
+		port = "25"
+	}
+
+	// Port 465 uses direct TLS connection
+	if port == "465" && s.useTLS {
+		// Use direct TLS connection for port 465
 		tlsConfig := &tls.Config{
 			ServerName: s.smtpHost,
 		}
@@ -126,7 +137,7 @@ func (s *Service) sendEmail(toEmail, subject, body string) error {
 			return fmt.Errorf("failed to create SMTP client: %w", err)
 		}
 	} else {
-		// Use plain connection (will upgrade to STARTTLS if supported)
+		// Use plain connection first (for ports 25, 587, or when TLS is disabled)
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
 			return fmt.Errorf("failed to connect to SMTP server: %w", err)
@@ -138,13 +149,18 @@ func (s *Service) sendEmail(toEmail, subject, body string) error {
 			return fmt.Errorf("failed to create SMTP client: %w", err)
 		}
 
-		// Try STARTTLS if supported
-		if ok, _ := client.Extension("STARTTLS"); ok {
-			tlsConfig := &tls.Config{
-				ServerName: s.smtpHost,
-			}
-			if err = client.StartTLS(tlsConfig); err != nil {
-				return fmt.Errorf("failed to start TLS: %w", err)
+		// Upgrade to STARTTLS if TLS is enabled and server supports it
+		if s.useTLS {
+			if ok, _ := client.Extension("STARTTLS"); ok {
+				tlsConfig := &tls.Config{
+					ServerName: s.smtpHost,
+				}
+				if err = client.StartTLS(tlsConfig); err != nil {
+					return fmt.Errorf("failed to start TLS: %w", err)
+				}
+			} else {
+				// Server doesn't support STARTTLS, but TLS was requested
+				// This is OK - continue without TLS upgrade
 			}
 		}
 	}
@@ -218,4 +234,3 @@ func GenerateVerificationToken() (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
-
