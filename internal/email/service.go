@@ -168,11 +168,33 @@ func (s *Service) sendEmail(toEmail, subject, body string) error {
 	defer client.Close()
 
 	// Authenticate if credentials are provided
+	// Only authenticate if server supports AUTH extension
 	if s.smtpUsername != "" && s.smtpPassword != "" {
-		auth := smtp.PlainAuth("", s.smtpUsername, s.smtpPassword, s.smtpHost)
-		if err = client.Auth(auth); err != nil {
-			return fmt.Errorf("SMTP authentication failed: %w", err)
+		// Check if server supports authentication
+		if ok, authMethods := client.Extension("AUTH"); ok {
+			// Check if PLAIN auth is supported
+			supportsPlain := false
+			if authMethods != "" {
+				// authMethods might be something like "PLAIN LOGIN" or "PLAIN"
+				if strings.Contains(strings.ToUpper(authMethods), "PLAIN") {
+					supportsPlain = true
+				}
+			} else {
+				// If no methods listed, assume PLAIN is supported
+				supportsPlain = true
+			}
+
+			if supportsPlain {
+				auth := smtp.PlainAuth("", s.smtpUsername, s.smtpPassword, s.smtpHost)
+				if err = client.Auth(auth); err != nil {
+					// Authentication failed
+					// EOF error usually means server closed connection - might not support auth on plain connection
+					// or credentials are wrong
+					return fmt.Errorf("SMTP authentication failed: %w", err)
+				}
+			}
 		}
+		// If server doesn't support AUTH extension, continue without authentication (open relay)
 	}
 
 	// Set sender
