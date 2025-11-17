@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -10,30 +9,13 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	buildinfo "lam-phuong-api/internal"
 	"lam-phuong-api/internal/location"
 	"lam-phuong-api/internal/user"
 )
 
-// ✅ THÊM STRUCT VersionInfo
-type VersionInfo struct {
-	Version    string `json:"version"`
-	CommitHash string `json:"commit_hash"`
-	BuildTime  string `json:"build_time"`
-	Status     string `json:"status"`
-}
-
 // NewRouter constructs a Gin engine configured with middleware and routes.
 func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwtSecret string) *gin.Engine {
 	router := gin.Default()
-
-	// ✅ THÊM LOG VERSION KHI KHỞI ĐỘNG
-	log.Printf("========================================")
-	log.Printf("🚀 Lam Phuong API")
-	log.Printf("  Version: %s", buildinfo.Version)
-	log.Printf("  Commit: %s", buildinfo.Commit)
-	log.Printf("  Build Time: %s", buildinfo.BuildTime)
-	log.Printf("========================================")
 
 	// Configure CORS middleware
 	router.Use(cors.New(cors.Config{
@@ -48,25 +30,8 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwt
 	// ✅ THÊM HEALTH ENDPOINT
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
-
-	// ✅ THÊM VERSION ENDPOINT
-	router.GET("/version", func(c *gin.Context) {
-		c.JSON(http.StatusOK, VersionInfo{
-			Version:    buildinfo.Version,
-			CommitHash: buildinfo.Commit,
-			BuildTime:  buildinfo.BuildTime,
-			Status:     "running",
-		})
-	})
-
-	// ✅ THÊM PING ENDPOINT (cho Swagger)
-	router.GET("/api/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
-			"version": buildinfo.Version,
+			"version": "1.0.0-alpha.0",
 		})
 	})
 
