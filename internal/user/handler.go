@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"lam-phuong-api/internal/response"
 )
 
 // Handler exposes HTTP handlers for the user resource
@@ -39,29 +40,31 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 // @Accept       json
 // @Produce      json
 // @Param        credentials  body      RegisterRequest  true  "Registration credentials"
-// @Success      201         {object}  TokenResponse
-// @Failure      400         {object}  map[string]string
-// @Failure      409         {object}  map[string]string
-// @Failure      500         {object}  map[string]string
+// @Success      201         {object}  response.Response  "User registered successfully"
+// @Failure      400         {object}  response.ErrorResponse  "Validation error"
+// @Failure      409         {object}  response.ErrorResponse  "Email already registered"
+// @Failure      500         {object}  response.ErrorResponse  "Internal server error"
 // @Router       /auth/register [post]
 func (h *Handler) RegisterHandler(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.ValidationError(c, "Invalid request data", map[string]interface{}{
+			"validation_error": err.Error(),
+		})
 		return
 	}
 
 	// Check if user already exists
 	_, exists := h.repo.GetByEmail(req.Email)
 	if exists {
-		c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+		response.DuplicateEmail(c)
 		return
 	}
 
 	// Hash the password
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		response.InternalError(c, "Failed to hash password")
 		return
 	}
 
@@ -77,17 +80,17 @@ func (h *Handler) RegisterHandler(c *gin.Context) {
 	if err != nil {
 		// Check if it's a duplicate email error (race condition)
 		if strings.Contains(err.Error(), "already exists") {
-			c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+			response.DuplicateEmail(c)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalError(c, "Failed to create user: "+err.Error())
 		return
 	}
 
 	// Generate JWT token for immediate use (auto-login)
 	token, err := GenerateToken(created, h.jwtSecret, h.tokenExpiry)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		response.InternalError(c, "Failed to generate token")
 		return
 	}
 
@@ -95,12 +98,13 @@ func (h *Handler) RegisterHandler(c *gin.Context) {
 	created.Password = ""
 
 	// Return token response
-	c.JSON(http.StatusCreated, TokenResponse{
+	tokenResp := TokenResponse{
 		AccessToken: token,
 		TokenType:   "Bearer",
 		ExpiresIn:   int64(h.tokenExpiry.Seconds()),
 		User:        created,
-	})
+	}
+	response.Success(c, http.StatusCreated, tokenResp, "User registered successfully")
 }
 
 // Login godoc
@@ -110,9 +114,9 @@ func (h *Handler) RegisterHandler(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        credentials  body      LoginRequest  true  "Login credentials"
-// @Success      200         {object}  TokenResponse
-// @Failure      400         {object}  map[string]string
-// @Failure      401         {object}  map[string]string
+// @Success      200         {object}  response.Response  "Login successful"
+// @Failure      400         {object}  response.ErrorResponse  "Validation error"
+// @Failure      401         {object}  response.ErrorResponse  "Invalid credentials"
 // @Router       /auth/login [post]
 func (h *Handler) LoginHandler(c *gin.Context) {
 	h.Login(c, h.jwtSecret, h.tokenExpiry)
@@ -125,9 +129,9 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {array}   User
-// @Failure      401  {object}  map[string]string
-// @Failure      403  {object}  map[string]string
+// @Success      200  {object}  response.Response  "Users retrieved successfully"
+// @Failure      401  {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      403  {object}  response.ErrorResponse  "Forbidden"
 // @Router       /users [get]
 func (h *Handler) ListUsers(c *gin.Context) {
 	users := h.repo.List()
@@ -135,7 +139,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 	for i := range users {
 		users[i].Password = ""
 	}
-	c.JSON(http.StatusOK, users)
+	response.Success(c, http.StatusOK, users, "Users retrieved successfully")
 }
 
 // CreateUser godoc
@@ -146,24 +150,26 @@ func (h *Handler) ListUsers(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        user  body      createUserPayload  true  "User payload"
-// @Success      201   {object}  User
-// @Failure      400   {object}  map[string]string
-// @Failure      401   {object}  map[string]string
-// @Failure      403   {object}  map[string]string
-// @Failure      409   {object}  map[string]string
-// @Failure      500   {object}  map[string]string
+// @Success      201   {object}  response.Response  "User created successfully"
+// @Failure      400   {object}  response.ErrorResponse  "Validation error"
+// @Failure      401   {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      403   {object}  response.ErrorResponse  "Forbidden"
+// @Failure      409   {object}  response.ErrorResponse  "Email already registered"
+// @Failure      500   {object}  response.ErrorResponse  "Internal server error"
 // @Router       /users [post]
 func (h *Handler) CreateUser(c *gin.Context) {
 	var payload createUserPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.ValidationError(c, "Invalid request data", map[string]interface{}{
+			"validation_error": err.Error(),
+		})
 		return
 	}
 
 	// Hash the password
 	hashedPassword, err := HashPassword(payload.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		response.InternalError(c, "Failed to hash password")
 		return
 	}
 
@@ -181,7 +187,9 @@ func (h *Handler) CreateUser(c *gin.Context) {
 			}
 		}
 		if !validRole {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role. Valid roles: " + joinRoles(ValidRoles)})
+			response.ValidationError(c, "Invalid role", map[string]interface{}{
+				"valid_roles": ValidRoles,
+			})
 			return
 		}
 	}
@@ -197,16 +205,16 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	if err != nil {
 		// Check if it's a duplicate email error
 		if strings.Contains(err.Error(), "already exists") {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			response.DuplicateEmail(c)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalError(c, "Failed to create user: "+err.Error())
 		return
 	}
 
 	// Remove password from response
 	created.Password = ""
-	c.JSON(http.StatusCreated, created)
+	response.Success(c, http.StatusCreated, created, "User created successfully")
 }
 
 // DeleteUser godoc
@@ -217,24 +225,24 @@ func (h *Handler) CreateUser(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id  path      string  true  "User ID"
-// @Success      200  {object}  map[string]interface{}
-// @Failure      401  {object}  map[string]string
-// @Failure      403  {object}  map[string]string
-// @Failure      404  {object}  map[string]string
+// @Success      200  {object}  response.Response  "User deleted successfully"
+// @Failure      401  {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      403  {object}  response.ErrorResponse  "Forbidden"
+// @Failure      404  {object}  response.ErrorResponse  "User not found"
 // @Router       /users/{id} [delete]
 func (h *Handler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		response.BadRequest(c, "User ID is required", nil)
 		return
 	}
 
 	if ok := h.repo.Delete(id); !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		response.NotFound(c, "User")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response.SuccessNoContent(c, "User deleted successfully")
 }
 
 // UpdateUser godoc
@@ -246,30 +254,32 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        id    path      string              true  "User ID"
 // @Param        user  body      updateUserPayload  true  "Update payload (role and/or password)"
-// @Success      200   {object}  User
-// @Failure      400   {object}  map[string]string
-// @Failure      401   {object}  map[string]string
-// @Failure      403   {object}  map[string]string
-// @Failure      404   {object}  map[string]string
-// @Failure      500   {object}  map[string]string
+// @Success      200   {object}  response.Response  "User updated successfully"
+// @Failure      400   {object}  response.ErrorResponse  "Validation error"
+// @Failure      401   {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      403   {object}  response.ErrorResponse  "Forbidden"
+// @Failure      404   {object}  response.ErrorResponse  "User not found"
+// @Failure      500   {object}  response.ErrorResponse  "Internal server error"
 // @Router       /users/{id} [put]
 func (h *Handler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		response.BadRequest(c, "User ID is required", nil)
 		return
 	}
 
 	var payload updateUserPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.ValidationError(c, "Invalid request data", map[string]interface{}{
+			"validation_error": err.Error(),
+		})
 		return
 	}
 
 	// Get existing user
 	existingUser, exists := h.repo.Get(id)
 	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		response.NotFound(c, "User")
 		return
 	}
 
@@ -279,12 +289,12 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 	// Update password if provided
 	if payload.Password != "" {
 		if len(payload.Password) < 6 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 6 characters"})
+			response.ValidationError(c, "Password must be at least 6 characters", nil)
 			return
 		}
 		hashedPassword, err := HashPassword(payload.Password)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+			response.InternalError(c, "Failed to hash password")
 			return
 		}
 		updatedUser.Password = hashedPassword
@@ -301,7 +311,9 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 			}
 		}
 		if !validRole {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role. Valid roles: " + joinRoles(ValidRoles)})
+			response.ValidationError(c, "Invalid role", map[string]interface{}{
+				"valid_roles": ValidRoles,
+			})
 			return
 		}
 		updatedUser.Role = payload.Role
@@ -309,20 +321,20 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 
 	// Check if at least one field is being updated
 	if payload.Password == "" && payload.Role == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "At least one field (password or role) must be provided"})
+		response.ValidationError(c, "At least one field (password or role) must be provided", nil)
 		return
 	}
 
 	// Update in repository (repository handles Airtable sync if configured)
 	updated, err := h.repo.Update(c.Request.Context(), id, updatedUser)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalError(c, "Failed to update user: "+err.Error())
 		return
 	}
 
 	// Remove password from response
 	updated.Password = ""
-	c.JSON(http.StatusOK, updated)
+	response.Success(c, http.StatusOK, updated, "User updated successfully")
 }
 
 // RegisterRequest represents the registration request payload

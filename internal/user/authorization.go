@@ -1,9 +1,8 @@
 package user
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"lam-phuong-api/internal/response"
 )
 
 // RequireRole creates a middleware that requires the user to have one of the specified roles
@@ -12,14 +11,14 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		// Get user role from context (set by AuthMiddleware)
 		userRole, exists := c.Get("user_role")
 		if !exists {
-			c.JSON(http.StatusForbidden, gin.H{"error": "User role not found in context"})
+			response.Forbidden(c, "User role not found in context")
 			c.Abort()
 			return
 		}
 
 		role, ok := userRole.(string)
 		if !ok {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Invalid user role type"})
+			response.Forbidden(c, "Invalid user role type")
 			c.Abort()
 			return
 		}
@@ -34,9 +33,7 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		}
 
 		if !hasPermission {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Insufficient permissions. Required roles: " + joinRoles(allowedRoles),
-			})
+			response.Forbidden(c, "Insufficient permissions. Required roles: "+joinRoles(allowedRoles))
 			c.Abort()
 			return
 		}

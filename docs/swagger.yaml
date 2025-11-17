@@ -1,14 +1,5 @@
 basePath: /api
 definitions:
-  location.Location:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-      slug:
-        type: string
-    type: object
   location.locationPayload:
     properties:
       name:
@@ -19,6 +10,43 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  response.ErrorInfo:
+    description: Error information structure
+    properties:
+      code:
+        example: VALIDATION_ERROR
+        type: string
+      details:
+        additionalProperties: true
+        type: object
+      message:
+        example: Invalid request data
+        type: string
+    type: object
+  response.ErrorResponse:
+    description: Standard error response structure
+    properties:
+      error:
+        $ref: '#/definitions/response.ErrorInfo'
+      message:
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  response.Response:
+    description: Standard API response structure
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/response.ErrorInfo'
+      message:
+        example: Operation completed successfully
+        type: string
+      success:
+        example: true
+        type: boolean
     type: object
   user.LoginRequest:
     properties:
@@ -41,26 +69,6 @@ definitions:
     - email
     - password
     type: object
-  user.TokenResponse:
-    properties:
-      access_token:
-        type: string
-      expires_in:
-        type: integer
-      token_type:
-        type: string
-      user:
-        $ref: '#/definitions/user.User'
-    type: object
-  user.User:
-    properties:
-      email:
-        type: string
-      id:
-        type: string
-      role:
-        type: string
-    type: object
   user.createUserPayload:
     properties:
       email:
@@ -73,6 +81,15 @@ definitions:
     required:
     - email
     - password
+    type: object
+  user.updateUserPayload:
+    properties:
+      password:
+        description: Optional, min 6 characters if provided
+        type: string
+      role:
+        description: Optional, must be valid role if provided
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -104,21 +121,17 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Login successful
           schema:
-            $ref: '#/definitions/user.TokenResponse'
+            $ref: '#/definitions/response.Response'
         "400":
-          description: Bad Request
+          description: Validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Invalid credentials
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       summary: User login
       tags:
       - auth
@@ -139,27 +152,21 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: User registered successfully
           schema:
-            $ref: '#/definitions/user.TokenResponse'
+            $ref: '#/definitions/response.Response'
         "400":
-          description: Bad Request
+          description: Validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "409":
-          description: Conflict
+          description: Email already registered
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       summary: User registration
       tags:
       - auth
@@ -172,17 +179,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Locations retrieved successfully
           schema:
-            items:
-              $ref: '#/definitions/location.Location'
-            type: array
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: List all locations
@@ -204,27 +207,21 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: Location created successfully
           schema:
-            $ref: '#/definitions/location.Location'
+            $ref: '#/definitions/response.Response'
         "400":
-          description: Bad Request
+          description: Validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a new location
@@ -245,28 +242,21 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Location deleted successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.Response'
         "400":
-          description: Bad Request
+          description: Validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "404":
-          description: Not Found
+          description: Location not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete a location by slug
@@ -281,23 +271,17 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Users retrieved successfully
           schema:
-            items:
-              $ref: '#/definitions/user.User'
-            type: array
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: List all users
@@ -319,39 +303,29 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: User created successfully
           schema:
-            $ref: '#/definitions/user.User'
+            $ref: '#/definitions/response.Response'
         "400":
-          description: Bad Request
+          description: Validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "409":
-          description: Conflict
+          description: Email already registered
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a new user
@@ -372,31 +346,73 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: User deleted successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "404":
-          description: Not Found
+          description: User not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's role and/or password by ID (requires super admin
+        role)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update payload (role and/or password)
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/user.updateUserPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user role and password
       tags:
       - users
 schemes:

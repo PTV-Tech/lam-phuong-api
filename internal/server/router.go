@@ -1,7 +1,6 @@
 package server
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -10,6 +9,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"lam-phuong-api/internal/location"
+	"lam-phuong-api/internal/response"
 	"lam-phuong-api/internal/user"
 )
 
@@ -29,10 +29,10 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwt
 
 	// ✅ THÊM HEALTH ENDPOINT
 	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+		response.Success(c, 200, gin.H{
 			"status":  "ok",
 			"version": "1.0.0-alpha.0",
-		})
+		}, "Service is healthy")
 	})
 
 	api := router.Group("/api")

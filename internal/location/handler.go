@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gosimple/slug"
+	"lam-phuong-api/internal/response"
 )
 
 // Handler exposes HTTP handlers for the location resource.
@@ -34,11 +35,12 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {array}   Location
-// @Failure      401  {object}  map[string]string
+// @Success      200  {object}  response.Response  "Locations retrieved successfully"
+// @Failure      401  {object}  response.ErrorResponse  "Unauthorized"
 // @Router       /locations [get]
 func (h *Handler) ListLocations(c *gin.Context) {
-	c.JSON(http.StatusOK, h.repo.List())
+	locations := h.repo.List()
+	response.Success(c, http.StatusOK, locations, "Locations retrieved successfully")
 }
 
 // CreateLocation godoc
@@ -49,15 +51,17 @@ func (h *Handler) ListLocations(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        location  body      locationPayload  true  "Location payload"
-// @Success      201       {object}  Location
-// @Failure      400       {object}  map[string]string
-// @Failure      401       {object}  map[string]string
-// @Failure      500       {object}  map[string]string
+// @Success      201       {object}  response.Response  "Location created successfully"
+// @Failure      400       {object}  response.ErrorResponse  "Validation error"
+// @Failure      401       {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      500       {object}  response.ErrorResponse  "Internal server error"
 // @Router       /locations [post]
 func (h *Handler) CreateLocation(c *gin.Context) {
 	var payload locationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.ValidationError(c, "Invalid request data", map[string]interface{}{
+			"validation_error": err.Error(),
+		})
 		return
 	}
 
@@ -79,11 +83,11 @@ func (h *Handler) CreateLocation(c *gin.Context) {
 	// Create in repository (repository handles Airtable sync if configured)
 	created, err := h.repo.Create(c.Request.Context(), location)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalError(c, "Failed to create location: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, created)
+	response.Success(c, http.StatusCreated, created, "Location created successfully")
 }
 
 type locationPayload struct {
@@ -121,28 +125,28 @@ func ensureUniqueSlug(repo Repository, baseSlug string) string {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        slug  path      string  true  "Location slug"
-// @Success      200   {object}  map[string]interface{}
-// @Failure      400   {object}  map[string]string
-// @Failure      401   {object}  map[string]string
-// @Failure      404   {object}  map[string]string
+// @Success      200   {object}  response.Response  "Location deleted successfully"
+// @Failure      400   {object}  response.ErrorResponse  "Validation error"
+// @Failure      401   {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      404   {object}  response.ErrorResponse  "Location not found"
 // @Router       /locations/{slug} [delete]
 func (h *Handler) DeleteLocationBySlug(c *gin.Context) {
 	slugParam := c.Param("slug")
 	if slugParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slug is required"})
+		response.BadRequest(c, "Slug is required", nil)
 		return
 	}
 
 	normalizedSlug := slug.Make(slugParam)
 	if normalizedSlug == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid slug"})
+		response.ValidationError(c, "Invalid slug format", nil)
 		return
 	}
 
 	if ok := h.repo.DeleteBySlug(normalizedSlug); !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "location not found"})
+		response.NotFound(c, "Location")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	response.SuccessNoContent(c, "Location deleted successfully")
 }

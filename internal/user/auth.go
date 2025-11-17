@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"lam-phuong-api/internal/response"
 )
 
 // AuthMiddleware validates JWT tokens and sets user context
@@ -14,7 +15,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		// Get token from Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			response.Unauthorized(c, "Authorization header required")
 			c.Abort()
 			return
 		}
@@ -22,7 +23,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		// Extract token from "Bearer <token>"
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format. Use: Bearer <token>"})
+			response.InvalidToken(c, "Invalid authorization header format. Use: Bearer <token>")
 			c.Abort()
 			return
 		}
@@ -32,7 +33,13 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		// Validate token
 		claims, err := ValidateToken(tokenString, jwtSecret)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			// Check if token is expired (jwt/v5 returns errors with "expired" in the message)
+			errMsg := strings.ToLower(err.Error())
+			if strings.Contains(errMsg, "expired") || strings.Contains(errMsg, "exp") {
+				response.ExpiredToken(c)
+			} else {
+				response.InvalidToken(c, "Invalid or expired token")
+			}
 			c.Abort()
 			return
 		}
@@ -56,27 +63,29 @@ type LoginRequest struct {
 func (h *Handler) Login(c *gin.Context, jwtSecret string, tokenExpiry time.Duration) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.ValidationError(c, "Invalid request data", map[string]interface{}{
+			"validation_error": err.Error(),
+		})
 		return
 	}
 
 	// Get user by email
 	user, ok := h.repo.GetByEmail(req.Email)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password."})
+		response.InvalidAuth(c, "Invalid email or password")
 		return
 	}
 
 	// Verify password
 	if !CheckPassword(user.Password, req.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		response.InvalidAuth(c, "Invalid email or password")
 		return
 	}
 
 	// Generate JWT token
 	token, err := GenerateToken(user, jwtSecret, tokenExpiry)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		response.InternalError(c, "Failed to generate token")
 		return
 	}
 
@@ -84,10 +93,11 @@ func (h *Handler) Login(c *gin.Context, jwtSecret string, tokenExpiry time.Durat
 	user.Password = ""
 
 	// Return token response
-	c.JSON(http.StatusOK, TokenResponse{
+	tokenResp := TokenResponse{
 		AccessToken: token,
 		TokenType:   "Bearer",
 		ExpiresIn:   int64(tokenExpiry.Seconds()),
 		User:        user,
-	})
+	}
+	response.Success(c, http.StatusOK, tokenResp, "Login successful")
 }
