@@ -99,14 +99,15 @@ func main() {
 	// Wrap with Airtable repository for persistence
 	userRepo := user.NewAirtableRepository(baseUserRepo, airtableClient, cfg.Airtable.UsersTableName)
 
-	// Initialize email service
-	emailService := email.NewService(
+	// Initialize email service with TLS configuration
+	emailService := email.NewServiceWithTLS(
 		cfg.Email.SMTPHost,
 		cfg.Email.SMTPPort,
 		cfg.Email.SMTPUsername,
 		cfg.Email.SMTPPassword,
 		cfg.Email.FromEmail,
 		cfg.Email.FromName,
+		cfg.Email.UseTLS,
 	)
 
 	// Create user handler with JWT configuration and email service

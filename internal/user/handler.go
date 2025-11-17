@@ -322,14 +322,14 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 }
 
 // UpdateUser godoc
-// @Summary      Update user role and password
-// @Description  Update a user's role and/or password by ID (requires super admin role)
+// @Summary      Update user role, password, and status
+// @Description  Update a user's role, password, and/or status by ID (requires super admin role). Status can be: pending, active, or disabled.
 // @Tags         users
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id    path      string              true  "User ID"
-// @Param        user  body      updateUserPayload  true  "Update payload (role and/or password)"
+// @Param        user  body      updateUserPayload  true  "Update payload (role, password, and/or status)"
 // @Success      200   {object}  user.UserResponseWrapper  "User updated successfully"
 // @Failure      400   {object}  response.ErrorResponse  "Validation error"
 // @Failure      401   {object}  response.ErrorResponse  "Unauthorized"
@@ -395,9 +395,29 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		updatedUser.Role = payload.Role
 	}
 
+	// Update status if provided
+	if payload.Status != "" {
+		// Validate status
+		validStatus := false
+		validStatuses := []string{StatusPending, StatusActive, StatusDisabled}
+		for _, valid := range validStatuses {
+			if payload.Status == valid {
+				validStatus = true
+				break
+			}
+		}
+		if !validStatus {
+			response.ValidationError(c, "Invalid status", map[string]interface{}{
+				"valid_statuses": validStatuses,
+			})
+			return
+		}
+		updatedUser.Status = payload.Status
+	}
+
 	// Check if at least one field is being updated
-	if payload.Password == "" && payload.Role == "" {
-		response.ValidationError(c, "At least one field (password or role) must be provided", nil)
+	if payload.Password == "" && payload.Role == "" && payload.Status == "" {
+		response.ValidationError(c, "At least one field (password, role, or status) must be provided", nil)
 		return
 	}
 
@@ -428,4 +448,5 @@ type createUserPayload struct {
 type updateUserPayload struct {
 	Password string `json:"password"` // Optional, min 6 characters if provided
 	Role     string `json:"role"`     // Optional, must be valid role if provided
+	Status   string `json:"status"`   // Optional, must be: pending, active, or disabled
 }

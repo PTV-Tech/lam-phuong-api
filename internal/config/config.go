@@ -50,6 +50,7 @@ type EmailConfig struct {
 	FromEmail    string `mapstructure:"from_email"`
 	FromName     string `mapstructure:"from_name"`
 	BaseURL      string `mapstructure:"base_url"` // Base URL for verification links
+	UseTLS       bool   `mapstructure:"use_tls"` // Use TLS for SMTP (default: true)
 }
 
 var (
@@ -116,11 +117,12 @@ func setDefaults() {
 	// Email defaults
 	viper.SetDefault("email.smtp_host", "")
 	viper.SetDefault("email.smtp_port", "587")
-	viper.SetDefault("email.smtp_username", "")
-	viper.SetDefault("email.smtp_password", "")
+	viper.SetDefault("email.smtp_username", "")  // Optional - leave empty for open relays
+	viper.SetDefault("email.smtp_password", "")   // Optional - leave empty for open relays
 	viper.SetDefault("email.from_email", "noreply@lamphuong.com")
 	viper.SetDefault("email.from_name", "Lam Phuong")
 	viper.SetDefault("email.base_url", "http://localhost:8080")
+	viper.SetDefault("email.use_tls", true)
 }
 
 // Validate checks if required configuration values are set

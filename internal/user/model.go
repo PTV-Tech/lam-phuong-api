@@ -10,19 +10,20 @@ import (
 
 // Airtable field names
 const (
-	FieldEmail              = "Email"
-	FieldPassword           = "Password"
-	FieldRole               = "Role"
-	FieldStatus             = "Status"
+	FieldEmail                  = "Email"
+	FieldPassword               = "Password"
+	FieldRole                   = "Role"
+	FieldStatus                 = "Status"
 	FieldEmailVerificationToken = "Email Verification Token"
-	FieldCreatedAt          = "Created At"
-	FieldUpdatedAt          = "Updated At"
+	FieldCreatedAt              = "Created At"
+	FieldUpdatedAt              = "Updated At"
 )
 
 // User status constants
 const (
-	StatusPending = "pending"
-	StatusActive  = "active"
+	StatusPending  = "Pending"
+	StatusActive   = "Active"
+	StatusDisabled = "Disabled"
 )
 
 // User roles
@@ -47,12 +48,12 @@ func getStringField(fields map[string]interface{}, key string) string {
 
 // User represents a user in the system
 type User struct {
-	ID                    string `json:"id"`
-	Email                 string `json:"email"`
-	Password              string `json:"-"` // Never serialize password in JSON responses
-	Role                  string `json:"role"`
-	Status                string `json:"status"` // "pending" or "active"
-	EmailVerificationToken string `json:"-"` // Never serialize verification token
+	ID                     string `json:"id"`
+	Email                  string `json:"email"`
+	Password               string `json:"-"` // Never serialize password in JSON responses
+	Role                   string `json:"role"`
+	Status                 string `json:"status"` // "pending", "active", or "disabled"
+	EmailVerificationToken string `json:"-"`      // Never serialize verification token
 }
 
 // ToAirtableFields converts a User to Airtable fields format (for creation)
@@ -88,11 +89,11 @@ func FromAirtable(record map[string]interface{}) (*User, error) {
 	}
 
 	return &User{
-		ID:                    id,
-		Email:                 getStringField(fields, FieldEmail),
-		Password:              getStringField(fields, FieldPassword),
-		Role:                  role,
-		Status:                status,
+		ID:                     id,
+		Email:                  getStringField(fields, FieldEmail),
+		Password:               getStringField(fields, FieldPassword),
+		Role:                   role,
+		Status:                 status,
 		EmailVerificationToken: getStringField(fields, FieldEmailVerificationToken),
 	}, nil
 }
@@ -147,9 +148,9 @@ type UserResponseWrapper struct {
 // UsersResponseWrapper wraps array of Users in the standard API response format for Swagger
 // @Description Response containing a list of users
 type UsersResponseWrapper struct {
-	Success bool     `json:"success" example:"true"`
-	Data    []User   `json:"data"`
-	Message string   `json:"message" example:"Users retrieved successfully"`
+	Success bool   `json:"success" example:"true"`
+	Data    []User `json:"data"`
+	Message string `json:"message" example:"Users retrieved successfully"`
 }
 
 // GenerateToken generates a JWT token for the user

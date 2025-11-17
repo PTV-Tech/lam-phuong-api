@@ -2,12 +2,15 @@ package email
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"net/smtp"
+	"strings"
 )
 
-// Service handles email sending
+// Service handles email sending via SMTP relay
 type Service struct {
 	smtpHost     string
 	smtpPort     string
@@ -15,10 +18,16 @@ type Service struct {
 	smtpPassword string
 	fromEmail    string
 	fromName     string
+	useTLS       bool // Use TLS for SMTP connection
 }
 
-// NewService creates a new email service
+// NewService creates a new email service with TLS enabled by default
 func NewService(smtpHost, smtpPort, smtpUsername, smtpPassword, fromEmail, fromName string) *Service {
+	return NewServiceWithTLS(smtpHost, smtpPort, smtpUsername, smtpPassword, fromEmail, fromName, true)
+}
+
+// NewServiceWithTLS creates a new email service with configurable TLS
+func NewServiceWithTLS(smtpHost, smtpPort, smtpUsername, smtpPassword, fromEmail, fromName string, useTLS bool) *Service {
 	return &Service{
 		smtpHost:     smtpHost,
 		smtpPort:     smtpPort,
@@ -26,6 +35,7 @@ func NewService(smtpHost, smtpPort, smtpUsername, smtpPassword, fromEmail, fromN
 		smtpPassword: smtpPassword,
 		fromEmail:    fromEmail,
 		fromName:     fromName,
+		useTLS:       useTLS,
 	}
 }
 
@@ -50,7 +60,8 @@ Best regards,
 	return s.sendEmail(toEmail, subject, body)
 }
 
-// sendEmail sends an email using SMTP
+// sendEmail sends an email using SMTP relay
+// Authentication is optional - works with open relays or authenticated SMTP servers
 func (s *Service) sendEmail(toEmail, subject, body string) error {
 	// If SMTP is not configured, log and skip sending (for development)
 	if s.smtpHost == "" || s.smtpPort == "" {
@@ -60,30 +71,143 @@ func (s *Service) sendEmail(toEmail, subject, body string) error {
 		return nil
 	}
 
-	// Set up authentication
-	auth := smtp.PlainAuth("", s.smtpUsername, s.smtpPassword, s.smtpHost)
+	// Validate email addresses
+	if !isValidEmail(toEmail) {
+		return fmt.Errorf("invalid recipient email address: %s", toEmail)
+	}
+	if !isValidEmail(s.fromEmail) {
+		return fmt.Errorf("invalid sender email address: %s", s.fromEmail)
+	}
 
-	// Create email message
+	addr := fmt.Sprintf("%s:%s", s.smtpHost, s.smtpPort)
+
+	// Create email message with proper headers
 	from := s.fromEmail
 	if s.fromName != "" {
 		from = fmt.Sprintf("%s <%s>", s.fromName, s.fromEmail)
 	}
 
-	msg := []byte(fmt.Sprintf("From: %s\r\n", from) +
-		fmt.Sprintf("To: %s\r\n", toEmail) +
-		fmt.Sprintf("Subject: %s\r\n", subject) +
-		"Content-Type: text/plain; charset=UTF-8\r\n" +
-		"\r\n" +
-		body + "\r\n")
+	// Build email message with proper headers
+	headers := make(map[string]string)
+	headers["From"] = from
+	headers["To"] = toEmail
+	headers["Subject"] = subject
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/plain; charset=UTF-8"
+	headers["Content-Transfer-Encoding"] = "8bit"
 
-	// Send email
-	addr := fmt.Sprintf("%s:%s", s.smtpHost, s.smtpPort)
-	err := smtp.SendMail(addr, auth, s.fromEmail, []string{toEmail}, msg)
+	// Build message
+	message := ""
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + body
+
+	msg := []byte(message)
+
+	// Connect to SMTP server
+	var client *smtp.Client
+	var err error
+
+	if s.useTLS {
+		// Use TLS connection
+		tlsConfig := &tls.Config{
+			ServerName: s.smtpHost,
+		}
+
+		conn, err := tls.Dial("tcp", addr, tlsConfig)
+		if err != nil {
+			return fmt.Errorf("failed to connect to SMTP server: %w", err)
+		}
+		defer conn.Close()
+
+		client, err = smtp.NewClient(conn, s.smtpHost)
+		if err != nil {
+			return fmt.Errorf("failed to create SMTP client: %w", err)
+		}
+	} else {
+		// Use plain connection (will upgrade to STARTTLS if supported)
+		conn, err := net.Dial("tcp", addr)
+		if err != nil {
+			return fmt.Errorf("failed to connect to SMTP server: %w", err)
+		}
+		defer conn.Close()
+
+		client, err = smtp.NewClient(conn, s.smtpHost)
+		if err != nil {
+			return fmt.Errorf("failed to create SMTP client: %w", err)
+		}
+
+		// Try STARTTLS if supported
+		if ok, _ := client.Extension("STARTTLS"); ok {
+			tlsConfig := &tls.Config{
+				ServerName: s.smtpHost,
+			}
+			if err = client.StartTLS(tlsConfig); err != nil {
+				return fmt.Errorf("failed to start TLS: %w", err)
+			}
+		}
+	}
+
+	defer client.Close()
+
+	// Authenticate if credentials are provided
+	if s.smtpUsername != "" && s.smtpPassword != "" {
+		auth := smtp.PlainAuth("", s.smtpUsername, s.smtpPassword, s.smtpHost)
+		if err = client.Auth(auth); err != nil {
+			return fmt.Errorf("SMTP authentication failed: %w", err)
+		}
+	}
+
+	// Set sender
+	if err = client.Mail(s.fromEmail); err != nil {
+		return fmt.Errorf("failed to set sender: %w", err)
+	}
+
+	// Set recipient
+	if err = client.Rcpt(toEmail); err != nil {
+		return fmt.Errorf("failed to set recipient: %w", err)
+	}
+
+	// Send email data
+	writer, err := client.Data()
 	if err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
+		return fmt.Errorf("failed to open data writer: %w", err)
+	}
+
+	_, err = writer.Write(msg)
+	if err != nil {
+		writer.Close()
+		return fmt.Errorf("failed to write email data: %w", err)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close data writer: %w", err)
+	}
+
+	// Quit
+	err = client.Quit()
+	if err != nil {
+		return fmt.Errorf("failed to quit SMTP session: %w", err)
 	}
 
 	return nil
+}
+
+// isValidEmail performs basic email validation
+func isValidEmail(email string) bool {
+	if email == "" {
+		return false
+	}
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	if parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	return true
 }
 
 // GenerateVerificationToken generates a secure random token for email verification

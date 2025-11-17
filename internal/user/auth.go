@@ -76,7 +76,11 @@ func (h *Handler) Login(c *gin.Context, jwtSecret string, tokenExpiry time.Durat
 		return
 	}
 
-	// Check if email is verified
+	// Check user status
+	if user.Status == StatusDisabled {
+		response.Error(c, http.StatusForbidden, response.ErrCodeForbidden, "Your account has been disabled. Please contact support.", nil)
+		return
+	}
 	if user.Status != StatusActive {
 		response.Error(c, http.StatusForbidden, response.ErrCodeForbidden, "Please verify your email address before logging in. Check your email for the verification link.", nil)
 		return
