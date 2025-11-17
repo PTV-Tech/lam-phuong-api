@@ -52,7 +52,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Login successful",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "$ref": "#/definitions/user.TokenResponseWrapper"
                         }
                     },
                     "400": {
@@ -98,7 +98,7 @@ const docTemplate = `{
                     "201": {
                         "description": "User registered successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "$ref": "#/definitions/user.TokenResponseWrapper"
                         }
                     },
                     "400": {
@@ -144,7 +144,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Locations retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "$ref": "#/definitions/location.LocationsResponseWrapper"
                         }
                     },
                     "401": {
@@ -187,7 +187,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Location created successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "$ref": "#/definitions/location.LocationResponseWrapper"
                         }
                     },
                     "400": {
@@ -288,7 +288,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Users retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "$ref": "#/definitions/user.UsersResponseWrapper"
                         }
                     },
                     "401": {
@@ -337,7 +337,7 @@ const docTemplate = `{
                     "201": {
                         "description": "User created successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "$ref": "#/definitions/user.UserResponseWrapper"
                         }
                     },
                     "400": {
@@ -413,7 +413,7 @@ const docTemplate = `{
                     "200": {
                         "description": "User updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "$ref": "#/definitions/user.UserResponseWrapper"
                         }
                     },
                     "400": {
@@ -504,6 +504,57 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "location.Location": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "location.LocationResponseWrapper": {
+            "description": "Response containing a single location",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/location.Location"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Location retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "location.LocationsResponseWrapper": {
+            "description": "Response containing a list of locations",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/location.Location"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Locations retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
         "location.locationPayload": {
             "type": "object",
             "required": [
@@ -600,6 +651,91 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 6
+                }
+            }
+        },
+        "user.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "token_type": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/user.User"
+                }
+            }
+        },
+        "user.TokenResponseWrapper": {
+            "description": "Response containing authentication token",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/user.TokenResponse"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Login successful"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "user.User": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UserResponseWrapper": {
+            "description": "Response containing a single user",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/user.User"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "User retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "user.UsersResponseWrapper": {
+            "description": "Response containing a list of users",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.User"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Users retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

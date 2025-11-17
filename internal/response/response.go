@@ -29,7 +29,7 @@ type ErrorInfo struct {
 type ErrorResponse struct {
 	Success bool      `json:"success" example:"false"`
 	Error   ErrorInfo `json:"error"`
-	Message string     `json:"message,omitempty"`
+	Message string    `json:"message,omitempty"`
 }
 
 // Error codes
@@ -133,4 +133,3 @@ func InvalidAuth(c *gin.Context, message string) {
 func DuplicateEmail(c *gin.Context) {
 	Error(c, http.StatusConflict, ErrCodeDuplicateEmail, "Email already registered", nil)
 }
-

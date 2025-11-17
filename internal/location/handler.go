@@ -35,7 +35,7 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  response.Response  "Locations retrieved successfully"
+// @Success      200  {object}  location.LocationsResponseWrapper  "Locations retrieved successfully"
 // @Failure      401  {object}  response.ErrorResponse  "Unauthorized"
 // @Router       /locations [get]
 func (h *Handler) ListLocations(c *gin.Context) {
@@ -51,7 +51,7 @@ func (h *Handler) ListLocations(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        location  body      locationPayload  true  "Location payload"
-// @Success      201       {object}  response.Response  "Location created successfully"
+// @Success      201       {object}  location.LocationResponseWrapper  "Location created successfully"
 // @Failure      400       {object}  response.ErrorResponse  "Validation error"
 // @Failure      401       {object}  response.ErrorResponse  "Unauthorized"
 // @Failure      500       {object}  response.ErrorResponse  "Internal server error"

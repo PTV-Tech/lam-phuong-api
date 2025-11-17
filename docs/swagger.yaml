@@ -1,5 +1,40 @@
 basePath: /api
 definitions:
+  location.Location:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  location.LocationResponseWrapper:
+    description: Response containing a single location
+    properties:
+      data:
+        $ref: '#/definitions/location.Location'
+      message:
+        example: Location retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  location.LocationsResponseWrapper:
+    description: Response containing a list of locations
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/location.Location'
+        type: array
+      message:
+        example: Locations retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
   location.locationPayload:
     properties:
       name:
@@ -69,6 +104,64 @@ definitions:
     - email
     - password
     type: object
+  user.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/user.User'
+    type: object
+  user.TokenResponseWrapper:
+    description: Response containing authentication token
+    properties:
+      data:
+        $ref: '#/definitions/user.TokenResponse'
+      message:
+        example: Login successful
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  user.User:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      role:
+        type: string
+    type: object
+  user.UserResponseWrapper:
+    description: Response containing a single user
+    properties:
+      data:
+        $ref: '#/definitions/user.User'
+      message:
+        example: User retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  user.UsersResponseWrapper:
+    description: Response containing a list of users
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/user.User'
+        type: array
+      message:
+        example: Users retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
   user.createUserPayload:
     properties:
       email:
@@ -123,7 +216,7 @@ paths:
         "200":
           description: Login successful
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/user.TokenResponseWrapper'
         "400":
           description: Validation error
           schema:
@@ -154,7 +247,7 @@ paths:
         "201":
           description: User registered successfully
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/user.TokenResponseWrapper'
         "400":
           description: Validation error
           schema:
@@ -181,7 +274,7 @@ paths:
         "200":
           description: Locations retrieved successfully
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/location.LocationsResponseWrapper'
         "401":
           description: Unauthorized
           schema:
@@ -209,7 +302,7 @@ paths:
         "201":
           description: Location created successfully
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/location.LocationResponseWrapper'
         "400":
           description: Validation error
           schema:
@@ -273,7 +366,7 @@ paths:
         "200":
           description: Users retrieved successfully
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/user.UsersResponseWrapper'
         "401":
           description: Unauthorized
           schema:
@@ -305,7 +398,7 @@ paths:
         "201":
           description: User created successfully
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/user.UserResponseWrapper'
         "400":
           description: Validation error
           schema:
@@ -389,7 +482,7 @@ paths:
         "200":
           description: User updated successfully
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/user.UserResponseWrapper'
         "400":
           description: Validation error
           schema:

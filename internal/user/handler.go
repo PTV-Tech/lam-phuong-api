@@ -40,7 +40,7 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 // @Accept       json
 // @Produce      json
 // @Param        credentials  body      RegisterRequest  true  "Registration credentials"
-// @Success      201         {object}  response.Response  "User registered successfully"
+// @Success      201         {object}  user.TokenResponseWrapper  "User registered successfully"
 // @Failure      400         {object}  response.ErrorResponse  "Validation error"
 // @Failure      409         {object}  response.ErrorResponse  "Email already registered"
 // @Failure      500         {object}  response.ErrorResponse  "Internal server error"
@@ -114,7 +114,7 @@ func (h *Handler) RegisterHandler(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        credentials  body      LoginRequest  true  "Login credentials"
-// @Success      200         {object}  response.Response  "Login successful"
+// @Success      200         {object}  user.TokenResponseWrapper  "Login successful"
 // @Failure      400         {object}  response.ErrorResponse  "Validation error"
 // @Failure      401         {object}  response.ErrorResponse  "Invalid credentials"
 // @Router       /auth/login [post]
@@ -129,7 +129,7 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  response.Response  "Users retrieved successfully"
+// @Success      200  {object}  user.UsersResponseWrapper  "Users retrieved successfully"
 // @Failure      401  {object}  response.ErrorResponse  "Unauthorized"
 // @Failure      403  {object}  response.ErrorResponse  "Forbidden"
 // @Router       /users [get]
@@ -150,7 +150,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        user  body      createUserPayload  true  "User payload"
-// @Success      201   {object}  response.Response  "User created successfully"
+// @Success      201   {object}  user.UserResponseWrapper  "User created successfully"
 // @Failure      400   {object}  response.ErrorResponse  "Validation error"
 // @Failure      401   {object}  response.ErrorResponse  "Unauthorized"
 // @Failure      403   {object}  response.ErrorResponse  "Forbidden"
@@ -254,7 +254,7 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        id    path      string              true  "User ID"
 // @Param        user  body      updateUserPayload  true  "Update payload (role and/or password)"
-// @Success      200   {object}  response.Response  "User updated successfully"
+// @Success      200   {object}  user.UserResponseWrapper  "User updated successfully"
 // @Failure      400   {object}  response.ErrorResponse  "Validation error"
 // @Failure      401   {object}  response.ErrorResponse  "Unauthorized"
 // @Failure      403   {object}  response.ErrorResponse  "Forbidden"

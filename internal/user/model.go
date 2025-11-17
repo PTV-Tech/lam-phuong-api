@@ -111,6 +111,30 @@ type TokenResponse struct {
 	User        User   `json:"user"`
 }
 
+// TokenResponseWrapper wraps TokenResponse in the standard API response format for Swagger
+// @Description Response containing authentication token
+type TokenResponseWrapper struct {
+	Success bool          `json:"success" example:"true"`
+	Data    TokenResponse `json:"data"`
+	Message string        `json:"message" example:"Login successful"`
+}
+
+// UserResponseWrapper wraps User in the standard API response format for Swagger
+// @Description Response containing a single user
+type UserResponseWrapper struct {
+	Success bool   `json:"success" example:"true"`
+	Data    User   `json:"data"`
+	Message string `json:"message" example:"User retrieved successfully"`
+}
+
+// UsersResponseWrapper wraps array of Users in the standard API response format for Swagger
+// @Description Response containing a list of users
+type UsersResponseWrapper struct {
+	Success bool     `json:"success" example:"true"`
+	Data    []User   `json:"data"`
+	Message string   `json:"message" example:"Users retrieved successfully"`
+}
+
 // GenerateToken generates a JWT token for the user
 func GenerateToken(user User, secretKey string, expiresIn time.Duration) (string, error) {
 	expirationTime := time.Now().Add(expiresIn)

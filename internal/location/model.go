@@ -27,6 +27,22 @@ type Location struct {
 	Slug string `json:"slug"`
 }
 
+// LocationResponseWrapper wraps Location in the standard API response format for Swagger
+// @Description Response containing a single location
+type LocationResponseWrapper struct {
+	Success bool     `json:"success" example:"true"`
+	Data    Location `json:"data"`
+	Message string   `json:"message" example:"Location retrieved successfully"`
+}
+
+// LocationsResponseWrapper wraps array of Locations in the standard API response format for Swagger
+// @Description Response containing a list of locations
+type LocationsResponseWrapper struct {
+	Success bool       `json:"success" example:"true"`
+	Data    []Location `json:"data"`
+	Message string     `json:"message" example:"Locations retrieved successfully"`
+}
+
 // ToAirtableFields converts a Location to Airtable fields format (for creation)
 // Deprecated: Use ToAirtableFieldsForCreate() instead
 func (l *Location) ToAirtableFields() map[string]interface{} {
