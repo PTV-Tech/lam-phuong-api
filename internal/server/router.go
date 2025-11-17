@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	buildinfo "lam-phuong-api/internal"
 	"lam-phuong-api/internal/location"
 	"lam-phuong-api/internal/user"
 )
@@ -22,10 +24,16 @@ type VersionInfo struct {
 }
 
 // NewRouter constructs a Gin engine configured with middleware and routes.
-func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwtSecret string, version string,
-	commitHash string,
-	buildTime string) *gin.Engine {
+func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwtSecret string) *gin.Engine {
 	router := gin.Default()
+
+	// ✅ THÊM LOG VERSION KHI KHỞI ĐỘNG
+	log.Printf("========================================")
+	log.Printf("🚀 Lam Phuong API")
+	log.Printf("  Version: %s", buildinfo.Version)
+	log.Printf("  Commit: %s", buildinfo.Commit)
+	log.Printf("  Build Time: %s", buildinfo.BuildTime)
+	log.Printf("========================================")
 
 	// Configure CORS middleware
 	router.Use(cors.New(cors.Config{
@@ -47,9 +55,9 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwt
 	// ✅ THÊM VERSION ENDPOINT
 	router.GET("/version", func(c *gin.Context) {
 		c.JSON(http.StatusOK, VersionInfo{
-			Version:    version,
-			CommitHash: commitHash,
-			BuildTime:  buildTime,
+			Version:    buildinfo.Version,
+			CommitHash: buildinfo.Commit,
+			BuildTime:  buildinfo.BuildTime,
 			Status:     "running",
 		})
 	})
@@ -58,7 +66,7 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, jwt
 	router.GET("/api/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
-			"version": version,
+			"version": buildinfo.Version,
 		})
 	})
 

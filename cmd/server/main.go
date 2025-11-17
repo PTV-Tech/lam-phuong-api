@@ -7,7 +7,6 @@ import (
 	"time"
 
 	docs "lam-phuong-api/docs" // Import docs for Swagger
-	buildinfo "lam-phuong-api/internal"
 	"lam-phuong-api/internal/config"
 	"lam-phuong-api/internal/location"
 	"lam-phuong-api/internal/server"
@@ -36,14 +35,6 @@ import (
 // @name                        Authorization
 // @description                 Type "Bearer" followed by a space and JWT token.
 func main() {
-	// ✅ THÊM LOG VERSION KHI KHỞI ĐỘNG
-	log.Printf("========================================")
-	log.Printf("🚀 Lam Phuong API")
-	log.Printf("  Version: %s", buildinfo.Version)
-	log.Printf("  Commit: %s", buildinfo.Commit)
-	log.Printf("  Build Time: %s", buildinfo.BuildTime)
-	log.Printf("========================================")
-
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -112,9 +103,7 @@ func main() {
 	userHandler := user.NewHandler(userRepo, cfg.Auth.JWTSecret, tokenExpiry)
 
 	// ✅ THÊM VERSION INFO VÀO ROUTER
-	router := server.NewRouter(locationHandler, userHandler, cfg.Auth.JWTSecret, buildinfo.Version,
-		buildinfo.Commit,
-		buildinfo.BuildTime)
+	router := server.NewRouter(locationHandler, userHandler, cfg.Auth.JWTSecret)
 
 	// Use server address from config
 	serverAddr := cfg.ServerAddress()
