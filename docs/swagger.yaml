@@ -61,8 +61,6 @@ definitions:
         type: string
       slug:
         type: string
-      status:
-        type: string
     type: object
   jobtype.JobTypeResponseWrapper:
     description: Response containing a single job type
@@ -732,50 +730,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete a job type by slug
-      tags:
-      - job-types
-  /job-types/{slug}/toggle-status:
-    post:
-      consumes:
-      - application/json
-      description: Toggle a job type's status between Active and Disabled. Only Admin
-        or Super Admin can call this endpoint.
-      parameters:
-      - description: Job type slug
-        in: path
-        name: slug
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Job type status toggled successfully
-          schema:
-            $ref: '#/definitions/jobtype.JobTypeResponseWrapper'
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "403":
-          description: Forbidden - Admin or Super Admin role required
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Job type not found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Toggle job type status
       tags:
       - job-types
   /locations:

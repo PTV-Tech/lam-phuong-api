@@ -575,73 +575,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/job-types/{slug}/toggle-status": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Toggle a job type's status between Active and Disabled. Only Admin or Super Admin can call this endpoint.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "job-types"
-                ],
-                "summary": "Toggle job type status",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Job type slug",
-                        "name": "slug",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Job type status toggled successfully",
-                        "schema": {
-                            "$ref": "#/definitions/jobtype.JobTypeResponseWrapper"
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - Admin or Super Admin role required",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Job type not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/locations": {
             "get": {
                 "security": [
@@ -1466,9 +1399,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "slug": {
-                    "type": "string"
-                },
-                "status": {
                     "type": "string"
                 }
             }
