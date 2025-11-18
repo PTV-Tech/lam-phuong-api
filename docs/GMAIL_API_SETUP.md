@@ -53,19 +53,22 @@ This guide explains how to set up the Gmail API for sending emails, following th
 
 ### 4. Get Refresh Token
 
-To get a refresh token, you need to complete the OAuth flow once. You can use a tool or script to do this:
+To get a refresh token, you need to complete the OAuth flow once. You have two options:
 
-1. Use the OAuth 2.0 Playground: https://developers.google.com/oauthplayground/
-   - Click the gear icon (⚙️) in the top right
-   - Check "Use your own OAuth credentials"
-   - Enter your Client ID and Client Secret
-   - In the left panel, find "Gmail API v1" and select `https://www.googleapis.com/auth/gmail.send`
-   - Click "Authorize APIs"
-   - Sign in and grant permissions
-   - Click "Exchange authorization code for tokens"
-   - Copy the "Refresh token" value
+**Option 1: Use the OAuth 2.0 Playground** (Recommended)
+- Go to https://developers.google.com/oauthplayground/
+- Click the gear icon (⚙️) in the top right
+- Check "Use your own OAuth credentials"
+- Enter your Client ID and Client Secret
+- In the left panel, find "Gmail API v1" and select `https://www.googleapis.com/auth/gmail.send`
+- Click "Authorize APIs"
+- Sign in and grant permissions
+- Click "Exchange authorization code for tokens"
+- Copy the "Refresh token" value
 
-2. Or use a simple script to generate the refresh token (see below)
+**Option 2: Use the Go Script**
+- See [Generate Refresh Token Guide](./GENERATE_REFRESH_TOKEN.md) for detailed instructions
+- This method uses a local Go script to generate the refresh token
 
 ### 5. Configure Environment Variables
 
