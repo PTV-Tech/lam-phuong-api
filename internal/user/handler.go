@@ -634,6 +634,62 @@ func (h *Handler) ChangeUserPassword(c *gin.Context) {
 	response.Success(c, http.StatusOK, updated, "Password changed successfully")
 }
 
+// ToggleUserStatus godoc
+// @Summary      Toggle user status
+// @Description  Toggle a user's status between Active and Disabled. Only Admin or Super Admin can call this endpoint.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      string  true  "User ID"
+// @Success      200   {object}  user.UserResponseWrapper  "User status toggled successfully"
+// @Failure      400   {object}  response.ErrorResponse  "Validation error"
+// @Failure      401   {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      403   {object}  response.ErrorResponse  "Forbidden - Admin or Super Admin role required"
+// @Failure      404   {object}  response.ErrorResponse  "User not found"
+// @Failure      500   {object}  response.ErrorResponse  "Internal server error"
+// @Router       /users/{id}/toggle-status [post]
+func (h *Handler) ToggleUserStatus(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.BadRequest(c, "User ID is required", nil)
+		return
+	}
+
+	// Get existing user
+	existingUser, exists := h.repo.Get(id)
+	if !exists {
+		response.NotFound(c, "User")
+		return
+	}
+
+	// Toggle status between Active and Disabled
+	// Skip Pending status - only toggle between Active and Disabled
+	var newStatus string
+	if existingUser.Status == StatusActive {
+		newStatus = StatusDisabled
+	} else if existingUser.Status == StatusDisabled {
+		newStatus = StatusActive
+	} else {
+		// If status is Pending or any other value, set to Active
+		newStatus = StatusActive
+	}
+
+	// Update user status
+	existingUser.Status = newStatus
+	updated, err := h.repo.Update(c.Request.Context(), id, existingUser)
+	if err != nil {
+		response.InternalError(c, "Failed to update user status: "+err.Error())
+		return
+	}
+
+	// Remove sensitive fields
+	updated.Password = ""
+	updated.EmailVerificationToken = ""
+
+	response.Success(c, http.StatusOK, updated, "User status toggled successfully")
+}
+
 // RegisterRequest represents the registration request payload
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`

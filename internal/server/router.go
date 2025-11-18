@@ -67,6 +67,7 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, ema
 				adminRoutes.GET("/users", userHandler.ListUsers)
 				adminRoutes.POST("/users", userHandler.CreateUser)
 				adminRoutes.DELETE("/users/:id", userHandler.DeleteUser)
+				adminRoutes.POST("/users/:id/toggle-status", userHandler.ToggleUserStatus)
 			}
 
 			// User update routes (super admin only)
