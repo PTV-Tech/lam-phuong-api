@@ -172,6 +172,28 @@ definitions:
         example: true
         type: boolean
     type: object
+  user.adminChangePasswordPayload:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        description: Optional for Super Admin, required for own password change
+        type: string
+    required:
+    - new_password
+    type: object
+  user.changePasswordPayload:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
   user.createUserPayload:
     properties:
       email:
@@ -211,6 +233,47 @@ info:
   title: Lam Phuong API
   version: "1.0"
 paths:
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change the authenticated user's own password. Requires old password
+        and new password. Users can only change their own password.
+      parameters:
+      - description: Password change credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/user.changePasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Invalid old password
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change own password
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -589,6 +652,57 @@ paths:
       security:
       - BearerAuth: []
       summary: Update user role, password, and status
+      tags:
+      - users
+  /users/{id}/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change a user's password by ID. Super Admin can change password
+        for any user. Other roles can only change their own password (by passing their
+        own user ID).
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Password change credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/user.adminChangePasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden - can only change own password unless Super Admin
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password (Super Admin only)
       tags:
       - users
 schemes:

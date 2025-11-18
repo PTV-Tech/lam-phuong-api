@@ -54,6 +54,12 @@ func NewRouter(locationHandler *location.Handler, userHandler *user.Handler, ema
 		protected := api.Group("")
 		protected.Use(user.AuthMiddleware(jwtSecret))
 		{
+			// User password change route (authenticated users - own password only)
+			protected.POST("/auth/change-password", userHandler.ChangePassword)
+
+			// User password change by ID (Super Admin can change any, others can only change own)
+			protected.POST("/users/:id/change-password", userHandler.ChangeUserPassword)
+
 			// User management routes (admin only)
 			adminRoutes := protected.Group("")
 			adminRoutes.Use(user.RequireAdmin())

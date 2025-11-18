@@ -449,6 +449,191 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 	response.Success(c, http.StatusOK, updated, "User updated successfully")
 }
 
+// ChangePassword godoc
+// @Summary      Change own password
+// @Description  Change the authenticated user's own password. Requires old password and new password. Users can only change their own password.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        credentials  body      changePasswordPayload  true  "Password change credentials"
+// @Success      200         {object}  response.Response  "Password changed successfully"
+// @Failure      400         {object}  response.ErrorResponse  "Validation error"
+// @Failure      401         {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      403         {object}  response.ErrorResponse  "Invalid old password"
+// @Failure      500         {object}  response.ErrorResponse  "Internal server error"
+// @Router       /auth/change-password [post]
+func (h *Handler) ChangePassword(c *gin.Context) {
+	// Get user ID from context (set by AuthMiddleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	var payload changePasswordPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		response.ValidationError(c, "Invalid request data", map[string]interface{}{
+			"validation_error": err.Error(),
+		})
+		return
+	}
+
+	// Validate new password length
+	if len(payload.NewPassword) < 6 {
+		response.ValidationError(c, "New password must be at least 6 characters", nil)
+		return
+	}
+
+	// Get current user
+	userIDStr := userID.(string)
+	currentUser, exists := h.repo.Get(userIDStr)
+	if !exists {
+		response.NotFound(c, "User")
+		return
+	}
+
+	// Verify old password
+	if !CheckPassword(currentUser.Password, payload.OldPassword) {
+		response.Forbidden(c, "Invalid old password")
+		return
+	}
+
+	// Check if new password is different from old password
+	if CheckPassword(currentUser.Password, payload.NewPassword) {
+		response.ValidationError(c, "New password must be different from old password", nil)
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := HashPassword(payload.NewPassword)
+	if err != nil {
+		response.InternalError(c, "Failed to hash password")
+		return
+	}
+
+	// Update password
+	currentUser.Password = hashedPassword
+	updated, err := h.repo.Update(c.Request.Context(), userIDStr, currentUser)
+	if err != nil {
+		response.InternalError(c, "Failed to update password: "+err.Error())
+		return
+	}
+
+	// Remove sensitive fields
+	updated.Password = ""
+	updated.EmailVerificationToken = ""
+
+	response.Success(c, http.StatusOK, updated, "Password changed successfully")
+}
+
+// ChangeUserPassword godoc
+// @Summary      Change user password (Super Admin only)
+// @Description  Change a user's password by ID. Super Admin can change password for any user. Other roles can only change their own password (by passing their own user ID).
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      string                      true  "User ID"
+// @Param        credentials  body      adminChangePasswordPayload  true  "Password change credentials"
+// @Success      200         {object}  response.Response  "Password changed successfully"
+// @Failure      400         {object}  response.ErrorResponse  "Validation error"
+// @Failure      401         {object}  response.ErrorResponse  "Unauthorized"
+// @Failure      403         {object}  response.ErrorResponse  "Forbidden - can only change own password unless Super Admin"
+// @Failure      404         {object}  response.ErrorResponse  "User not found"
+// @Failure      500         {object}  response.ErrorResponse  "Internal server error"
+// @Router       /users/{id}/change-password [post]
+func (h *Handler) ChangeUserPassword(c *gin.Context) {
+	// Get authenticated user ID and role from context
+	authUserID, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	authUserIDStr := authUserID.(string)
+	authUserRole, exists := c.Get("user_role")
+	if !exists {
+		response.Unauthorized(c, "User role not found")
+		return
+	}
+	authUserRoleStr := authUserRole.(string)
+
+	// Get target user ID from path parameter
+	targetUserID := c.Param("id")
+	if targetUserID == "" {
+		response.BadRequest(c, "User ID is required", nil)
+		return
+	}
+
+	// Check permissions: Super Admin can change any password, others can only change their own
+	if authUserRoleStr != RoleSuperAdmin && authUserIDStr != targetUserID {
+		response.Forbidden(c, "You can only change your own password. Super Admin can change any user's password.")
+		return
+	}
+
+	var payload adminChangePasswordPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		response.ValidationError(c, "Invalid request data", map[string]interface{}{
+			"validation_error": err.Error(),
+		})
+		return
+	}
+
+	// Validate new password length
+	if len(payload.NewPassword) < 6 {
+		response.ValidationError(c, "New password must be at least 6 characters", nil)
+		return
+	}
+
+	// Get target user
+	targetUser, exists := h.repo.Get(targetUserID)
+	if !exists {
+		response.NotFound(c, "User")
+		return
+	}
+
+	// If user is changing their own password (not Super Admin), require old password verification
+	if authUserRoleStr != RoleSuperAdmin && authUserIDStr == targetUserID {
+		if payload.OldPassword == "" {
+			response.ValidationError(c, "Old password is required when changing your own password", nil)
+			return
+		}
+		// Verify old password
+		if !CheckPassword(targetUser.Password, payload.OldPassword) {
+			response.Forbidden(c, "Invalid old password")
+			return
+		}
+	}
+
+	// Check if new password is different from old password
+	if CheckPassword(targetUser.Password, payload.NewPassword) {
+		response.ValidationError(c, "New password must be different from current password", nil)
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := HashPassword(payload.NewPassword)
+	if err != nil {
+		response.InternalError(c, "Failed to hash password")
+		return
+	}
+
+	// Update password
+	targetUser.Password = hashedPassword
+	updated, err := h.repo.Update(c.Request.Context(), targetUserID, targetUser)
+	if err != nil {
+		response.InternalError(c, "Failed to update password: "+err.Error())
+		return
+	}
+
+	// Remove sensitive fields
+	updated.Password = ""
+	updated.EmailVerificationToken = ""
+
+	response.Success(c, http.StatusOK, updated, "Password changed successfully")
+}
+
 // RegisterRequest represents the registration request payload
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
@@ -465,4 +650,14 @@ type updateUserPayload struct {
 	Password string `json:"password"` // Optional, min 6 characters if provided
 	Role     string `json:"role"`     // Optional, must be valid role if provided
 	Status   string `json:"status"`   // Optional, must be: pending, active, or disabled
+}
+
+type changePasswordPayload struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
+type adminChangePasswordPayload struct {
+	OldPassword string `json:"old_password"` // Optional for Super Admin, required for own password change
+	NewPassword string `json:"new_password" binding:"required,min=6"`
 }
