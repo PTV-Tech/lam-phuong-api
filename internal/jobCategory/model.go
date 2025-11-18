@@ -4,10 +4,10 @@ import "fmt"
 
 // Airtable field names
 const (
-	FieldName      = "fldebTCs8RIl103Fg"
-	FieldSlug      = "fldGHx2dAt0ViTBZD"
-	FieldCreatedAt = "fldqvBZivqyp9en3o"
-	FieldUpdatedAt = "fldTdxtQIf96sOnMh"
+	FieldName      = "Name"
+	FieldSlug      = "Slug"
+	FieldCreatedAt = "Created At"
+	FieldUpdatedAt = "Updated At"
 )
 
 // Helper functions
