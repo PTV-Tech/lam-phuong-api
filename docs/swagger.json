@@ -285,6 +285,294 @@
                 }
             }
         },
+        "/job-categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a list of all job categories (requires authentication)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job-categories"
+                ],
+                "summary": "List all job categories",
+                "responses": {
+                    "200": {
+                        "description": "Job categories retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/jobcategory.JobCategoriesResponseWrapper"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new job category with name and optional slug. If slug is not provided, it will be generated from the name. (requires authentication)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job-categories"
+                ],
+                "summary": "Create a new job category",
+                "parameters": [
+                    {
+                        "description": "Job category payload",
+                        "name": "jobCategory",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/jobcategory.jobCategoryPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Job category created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/jobcategory.JobCategoryResponseWrapper"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/job-categories/{slug}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a job category using its slug (requires authentication)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job-categories"
+                ],
+                "summary": "Delete a job category by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job category slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job category deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Job category not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/job-types": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a list of all job types (requires authentication)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job-types"
+                ],
+                "summary": "List all job types",
+                "responses": {
+                    "200": {
+                        "description": "Job types retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/jobtype.JobTypesResponseWrapper"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new job type with name and optional slug. If slug is not provided, it will be generated from the name. (requires authentication)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job-types"
+                ],
+                "summary": "Create a new job type",
+                "parameters": [
+                    {
+                        "description": "Job type payload",
+                        "name": "jobType",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/jobtype.jobTypePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Job type created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/jobtype.JobTypeResponseWrapper"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/job-types/{slug}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a job type using its slug (requires authentication)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job-types"
+                ],
+                "summary": "Delete a job type by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job type slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job type deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Job type not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/locations": {
             "get": {
                 "security": [
@@ -961,6 +1249,140 @@
             ],
             "properties": {
                 "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "jobcategory.JobCategoriesResponseWrapper": {
+            "description": "Response containing a list of job categories",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/jobcategory.JobCategory"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Job categories retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "jobcategory.JobCategory": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "jobcategory.JobCategoryResponseWrapper": {
+            "description": "Response containing a single job category",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/jobcategory.JobCategory"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Job category retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "jobcategory.jobCategoryPayload": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Required",
+                    "type": "string"
+                },
+                "slug": {
+                    "description": "Optional, will be generated from name if not provided",
+                    "type": "string"
+                }
+            }
+        },
+        "jobtype.JobType": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "jobtype.JobTypeResponseWrapper": {
+            "description": "Response containing a single job type",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/jobtype.JobType"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Job type retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "jobtype.JobTypesResponseWrapper": {
+            "description": "Response containing a list of job types",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/jobtype.JobType"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Job types retrieved successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "jobtype.jobTypePayload": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Required",
+                    "type": "string"
+                },
+                "slug": {
+                    "description": "Optional, will be generated from name if not provided",
                     "type": "string"
                 }
             }

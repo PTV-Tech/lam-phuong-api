@@ -9,6 +9,8 @@ import (
 	docs "lam-phuong-api/docs" // Import docs for Swagger
 	"lam-phuong-api/internal/config"
 	"lam-phuong-api/internal/email"
+	jobCategory "lam-phuong-api/internal/jobCategory"
+	jobType "lam-phuong-api/internal/jobType"
 	"lam-phuong-api/internal/location"
 	productGroup "lam-phuong-api/internal/productGroup"
 	"lam-phuong-api/internal/server"
@@ -86,6 +88,12 @@ func main() {
 	productGroupRepo := productGroup.NewAirtableRepository(airtableClient, cfg.Airtable.ProductGroupsTableName)
 	productGroupHandler := productGroup.NewHandler(productGroupRepo)
 
+	jobCategoryRepo := jobCategory.NewAirtableRepository(airtableClient, cfg.Airtable.JobCategoriesTableName)
+	jobCategoryHandler := jobCategory.NewHandler(jobCategoryRepo)
+
+	jobTypeRepo := jobType.NewAirtableRepository(airtableClient, cfg.Airtable.JobTypesTableName)
+	jobTypeHandler := jobType.NewHandler(jobTypeRepo)
+
 	userRepo := user.NewAirtableRepository(airtableClient, cfg.Airtable.UsersTableName)
 
 	// Create user handler with JWT configuration
@@ -116,7 +124,7 @@ func main() {
 		}
 	}
 
-	router := server.NewRouter(locationHandler, productGroupHandler, userHandler, emailHandler, cfg.Auth.JWTSecret)
+	router := server.NewRouter(locationHandler, productGroupHandler, jobCategoryHandler, jobTypeHandler, userHandler, emailHandler, cfg.Auth.JWTSecret)
 
 	// Use server address from config
 	serverAddr := cfg.ServerAddress()

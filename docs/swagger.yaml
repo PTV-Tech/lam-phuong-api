@@ -7,6 +7,98 @@ definitions:
     required:
     - email
     type: object
+  jobcategory.JobCategoriesResponseWrapper:
+    description: Response containing a list of job categories
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/jobcategory.JobCategory'
+        type: array
+      message:
+        example: Job categories retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  jobcategory.JobCategory:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  jobcategory.JobCategoryResponseWrapper:
+    description: Response containing a single job category
+    properties:
+      data:
+        $ref: '#/definitions/jobcategory.JobCategory'
+      message:
+        example: Job category retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  jobcategory.jobCategoryPayload:
+    properties:
+      name:
+        description: Required
+        type: string
+      slug:
+        description: Optional, will be generated from name if not provided
+        type: string
+    required:
+    - name
+    type: object
+  jobtype.JobType:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  jobtype.JobTypeResponseWrapper:
+    description: Response containing a single job type
+    properties:
+      data:
+        $ref: '#/definitions/jobtype.JobType'
+      message:
+        example: Job type retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  jobtype.JobTypesResponseWrapper:
+    description: Response containing a list of job types
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/jobtype.JobType'
+        type: array
+      message:
+        example: Job types retrieved successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  jobtype.jobTypePayload:
+    properties:
+      name:
+        description: Required
+        type: string
+      slug:
+        description: Optional, will be generated from name if not provided
+        type: string
+    required:
+    - name
+    type: object
   location.Location:
     properties:
       id:
@@ -454,6 +546,190 @@ paths:
       summary: Send test email
       tags:
       - email
+  /job-categories:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all job categories (requires authentication)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job categories retrieved successfully
+          schema:
+            $ref: '#/definitions/jobcategory.JobCategoriesResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all job categories
+      tags:
+      - job-categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new job category with name and optional slug. If slug
+        is not provided, it will be generated from the name. (requires authentication)
+      parameters:
+      - description: Job category payload
+        in: body
+        name: jobCategory
+        required: true
+        schema:
+          $ref: '#/definitions/jobcategory.jobCategoryPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Job category created successfully
+          schema:
+            $ref: '#/definitions/jobcategory.JobCategoryResponseWrapper'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new job category
+      tags:
+      - job-categories
+  /job-categories/{slug}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a job category using its slug (requires authentication)
+      parameters:
+      - description: Job category slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job category deleted successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Job category not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a job category by slug
+      tags:
+      - job-categories
+  /job-types:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all job types (requires authentication)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job types retrieved successfully
+          schema:
+            $ref: '#/definitions/jobtype.JobTypesResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all job types
+      tags:
+      - job-types
+    post:
+      consumes:
+      - application/json
+      description: Create a new job type with name and optional slug. If slug is not
+        provided, it will be generated from the name. (requires authentication)
+      parameters:
+      - description: Job type payload
+        in: body
+        name: jobType
+        required: true
+        schema:
+          $ref: '#/definitions/jobtype.jobTypePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Job type created successfully
+          schema:
+            $ref: '#/definitions/jobtype.JobTypeResponseWrapper'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new job type
+      tags:
+      - job-types
+  /job-types/{slug}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a job type using its slug (requires authentication)
+      parameters:
+      - description: Job type slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job type deleted successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Job type not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a job type by slug
+      tags:
+      - job-types
   /locations:
     get:
       consumes:

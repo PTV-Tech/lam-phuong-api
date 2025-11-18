@@ -9,6 +9,8 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"lam-phuong-api/internal/email"
+	jobCategory "lam-phuong-api/internal/jobCategory"
+	jobType "lam-phuong-api/internal/jobType"
 	"lam-phuong-api/internal/location"
 	productGroup "lam-phuong-api/internal/productGroup"
 	"lam-phuong-api/internal/response"
@@ -16,7 +18,7 @@ import (
 )
 
 // NewRouter constructs a Gin engine configured with middleware and routes.
-func NewRouter(locationHandler *location.Handler, productGroupHandler *productGroup.Handler, userHandler *user.Handler, emailHandler *email.Handler, jwtSecret string) *gin.Engine {
+func NewRouter(locationHandler *location.Handler, productGroupHandler *productGroup.Handler, jobCategoryHandler *jobCategory.Handler, jobTypeHandler *jobType.Handler, userHandler *user.Handler, emailHandler *email.Handler, jwtSecret string) *gin.Engine {
 	router := gin.Default()
 
 	// Configure CORS middleware
@@ -83,6 +85,12 @@ func NewRouter(locationHandler *location.Handler, productGroupHandler *productGr
 
 			// Product group routes (authenticated users)
 			productGroupHandler.RegisterRoutes(protected)
+
+			// Job category routes (authenticated users)
+			jobCategoryHandler.RegisterRoutes(protected)
+
+			// Job type routes (authenticated users)
+			jobTypeHandler.RegisterRoutes(protected)
 		}
 	}
 

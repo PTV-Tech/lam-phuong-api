@@ -34,6 +34,8 @@ type AirtableConfig struct {
 	LocationsTableName     string `mapstructure:"locations_table_name"`
 	UsersTableName         string `mapstructure:"users_table_name"`
 	ProductGroupsTableName string `mapstructure:"product_groups_table_name"`
+	JobCategoriesTableName string `mapstructure:"job_categories_table_name"`
+	JobTypesTableName      string `mapstructure:"job_types_table_name"`
 }
 
 // AuthConfig holds authentication-related configuration
@@ -109,6 +111,8 @@ func setDefaults() {
 	viper.SetDefault("airtable.locations_table_name", "Địa điểm")
 	viper.SetDefault("airtable.users_table_name", "Người dùng")
 	viper.SetDefault("airtable.product_groups_table_name", "Nhóm sản phẩm")
+	viper.SetDefault("airtable.job_categories_table_name", "Danh mục công việc")
+	viper.SetDefault("airtable.job_types_table_name", "Loại công việc")
 
 	// Auth defaults
 	viper.SetDefault("auth.jwt_secret", "")
@@ -150,6 +154,16 @@ func (c *Config) Validate() error {
 	// ProductGroupsTableName has a default value, so it's optional but we ensure it's set
 	if c.Airtable.ProductGroupsTableName == "" {
 		c.Airtable.ProductGroupsTableName = "Nhóm sản phẩm" // Fallback to default if somehow empty
+	}
+
+	// JobCategoriesTableName has a default value, so it's optional but we ensure it's set
+	if c.Airtable.JobCategoriesTableName == "" {
+		c.Airtable.JobCategoriesTableName = "Danh mục công việc" // Fallback to default if somehow empty
+	}
+
+	// JobTypesTableName has a default value, so it's optional but we ensure it's set
+	if c.Airtable.JobTypesTableName == "" {
+		c.Airtable.JobTypesTableName = "Loại công việc" // Fallback to default if somehow empty
 	}
 
 	// Validate auth config
