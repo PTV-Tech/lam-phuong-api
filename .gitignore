@@ -5,3 +5,4 @@ credentials_*.json
 client_secret.json
 generate_token.go
 tmp/
+.DS_Store
